@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#2a1f15"/>
+      <stop offset="100%" stop-color="#14100c"/>
+    </radialGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a3a26"/>
+      <stop offset="50%" stop-color="#2e2218"/>
+      <stop offset="100%" stop-color="#1a1208"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#d9a441"/>
+      <stop offset="60%" stop-color="#e8a04a"/>
+      <stop offset="100%" stop-color="rgba(232,160,74,0)"/>
+    </linearGradient>
+    <radialGradient id="food" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#e8a04a"/>
+      <stop offset="100%" stop-color="#b8842e"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- 木质纹理细线 -->
+  <g stroke="#3a2a1a" stroke-width="1" opacity="0.4">
+    <line x1="0" y1="80" x2="512" y2="95"/>
+    <line x1="0" y1="430" x2="512" y2="415"/>
+    <line x1="60" y1="0" x2="75" y2="512"/>
+    <line x1="450" y1="0" x2="435" y2="512"/>
+  </g>
+  <!-- 蒸汽 -->
+  <g fill="none" stroke="#8a7a5a" stroke-width="5" stroke-linecap="round" opacity="0.6">
+    <path d="M196 180 Q186 150 196 120 Q206 90 196 60"/>
+    <path d="M256 175 Q246 140 256 105 Q266 70 256 40"/>
+    <path d="M316 180 Q326 150 316 120 Q306 90 316 60"/>
+  </g>
+  <!-- 锅内金色光晕 -->
+  <ellipse cx="256" cy="335" rx="135" ry="35" fill="url(#glow)" opacity="0.9"/>
+  <!-- 烹饪锅 -->
+  <!-- 锅耳 -->
+  <rect x="96" y="300" width="26" height="50" rx="13" fill="url(#pot)" stroke="#5a4628" stroke-width="4"/>
+  <rect x="390" y="300" width="26" height="50" rx="13" fill="url(#pot)" stroke="#5a4628" stroke-width="4"/>
+  <!-- 锅身 -->
+  <path d="M112 290 Q112 280 130 280 L382 280 Q400 280 400 290 L388 420 Q388 440 368 440 L144 440 Q124 440 124 420 Z" fill="url(#pot)" stroke="#5a4628" stroke-width="5"/>
+  <!-- 锅口 -->
+  <ellipse cx="256" cy="280" rx="150" ry="24" fill="#1a1208" stroke="#5a4628" stroke-width="5"/>
+  <ellipse cx="256" cy="278" rx="146" ry="20" fill="#0a0805"/>
+  <!-- 锅内食物:肉丸(中) -->
+  <circle cx="256" cy="276" r="34" fill="url(#food)" stroke="#7a5a2a" stroke-width="3"/>
+  <path d="M240 268 Q256 260 272 268" fill="none" stroke="#5a3a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M246 285 Q256 290 266 285" fill="none" stroke="#5a3a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 火龙果(左) -->
+  <circle cx="176" cy="278" r="26" fill="#9a4a6a" stroke="#5a2a3a" stroke-width="3"/>
+  <path d="M176 252 L170 240 M176 252 L182 240 M176 252 L176 238" stroke="#4a8a3a" stroke-width="3" stroke-linecap="round"/>
+  <!-- 胡萝卜(右) -->
+  <path d="M336 278 L322 300 L350 300 Z" fill="#e8843a" stroke="#7a4a1a" stroke-width="3"/>
+  <path d="M336 278 L330 266 M336 278 L342 266 M336 278 L336 264" stroke="#4a8a3a" stroke-width="3" stroke-linecap="round"/>
+  <!-- 交叉阴影(手绘风) -->
+  <g stroke="#0a0805" stroke-width="1.5" opacity="0.5">
+    <line x1="140" y1="400" x2="155" y2="415"/>
+    <line x1="155" y1="400" x2="140" y2="415"/>
+    <line x1="360" y1="400" x2="375" y2="415"/>
+    <line x1="375" y1="400" x2="360" y2="415"/>
+  </g>
+  <!-- 底部火光 -->
+  <path d="M180 450 Q200 470 220 455 Q240 475 260 458 Q280 475 300 455 Q320 470 340 450" fill="none" stroke="#d9a441" stroke-width="4" opacity="0.7" stroke-linecap="round"/>
+</svg>
