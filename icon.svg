@@ -1,151 +1,133 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
-      <stop offset="0%" stop-color="#3a2a18"/>
-      <stop offset="55%" stop-color="#241a10"/>
-      <stop offset="100%" stop-color="#0e0a06"/>
+    <radialGradient id="bg" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#2a1d12"/>
+      <stop offset="60%" stop-color="#14100a"/>
+      <stop offset="100%" stop-color="#060403"/>
+    </radialGradient>
+    <radialGradient id="fire" cx="50%" cy="55%" r="50%">
+      <stop offset="0%" stop-color="#ffe89a"/>
+      <stop offset="30%" stop-color="#f0a838"/>
+      <stop offset="65%" stop-color="#c45814"/>
+      <stop offset="100%" stop-color="#3a1808"/>
     </radialGradient>
     <linearGradient id="pot" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3d2e1c"/>
-      <stop offset="50%" stop-color="#241a10"/>
-      <stop offset="100%" stop-color="#120c06"/>
+      <stop offset="0%" stop-color="#2a2014"/>
+      <stop offset="50%" stop-color="#1a1208"/>
+      <stop offset="100%" stop-color="#0a0603"/>
     </linearGradient>
-    <radialGradient id="fire" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffd87a"/>
-      <stop offset="35%" stop-color="#e8a04a"/>
-      <stop offset="75%" stop-color="#b85a1e"/>
-      <stop offset="100%" stop-color="rgba(184,90,30,0)"/>
-    </radialGradient>
     <linearGradient id="meatball" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#c4844a"/>
-      <stop offset="100%" stop-color="#7a4a22"/>
+      <stop offset="0%" stop-color="#b07840"/>
+      <stop offset="100%" stop-color="#6a3a18"/>
     </linearGradient>
     <linearGradient id="dragon" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#d85a7a"/>
-      <stop offset="100%" stop-color="#8a3a52"/>
+      <stop offset="0%" stop-color="#c84868"/>
+      <stop offset="100%" stop-color="#7a2840"/>
     </linearGradient>
     <linearGradient id="carrot" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f0964a"/>
-      <stop offset="100%" stop-color="#b85a1e"/>
+      <stop offset="0%" stop-color="#e88838"/>
+      <stop offset="100%" stop-color="#a04818"/>
     </linearGradient>
-    <filter id="rough">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3"/>
-      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"/>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="3" seed="7"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.22 0"/>
       <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
+    <filter id="wobble">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="1" seed="5"/>
+      <feDisplacementMap in="SourceGraphic" scale="2.5"/>
+    </filter>
   </defs>
-
-  <!-- 深色羊皮纸背景 -->
   <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- 羊皮纸纹理噪点 -->
-  <rect width="512" height="512" filter="url(#rough)" opacity="0.4"/>
-  <!-- 暗角 -->
-  <radialGradient id="vig" cx="50%" cy="50%" r="70%">
-    <stop offset="60%" stop-color="rgba(0,0,0,0)"/>
-    <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+  <rect width="512" height="512" filter="url(#noise)" opacity="0.5"/>
+  <radialGradient id="vig" cx="50%" cy="50%" r="68%">
+    <stop offset="55%" stop-color="rgba(0,0,0,0)"/>
+    <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
   </radialGradient>
   <rect width="512" height="512" fill="url(#vig)"/>
-
-  <!-- 蒸汽:手绘波浪线 -->
-  <g fill="none" stroke="#9a8a6a" stroke-width="3.5" stroke-linecap="round" opacity="0.55">
-    <path d="M200 195 Q190 170 200 145 Q210 120 200 95 Q190 70 200 50"/>
-    <path d="M256 188 Q246 160 256 130 Q266 100 256 72 Q246 48 256 28"/>
-    <path d="M312 195 Q322 170 312 145 Q302 120 312 95 Q322 70 312 50"/>
+  <g fill="none" stroke="#7a6a4a" stroke-width="3.5" stroke-linecap="round" opacity="0.5" filter="url(#wobble)">
+    <path d="M196 180 Q186 155 196 130 Q206 105 196 80 Q186 55 196 35"/>
+    <path d="M256 170 Q246 142 256 114 Q266 86 256 58 Q246 34 256 14"/>
+    <path d="M316 180 Q326 155 316 130 Q306 105 316 80 Q326 55 316 35"/>
   </g>
-
-  <!-- 锅内火焰光晕 -->
-  <ellipse cx="256" cy="330" rx="160" ry="48" fill="url(#fire)" opacity="0.95"/>
-  <!-- 火焰 -->
-  <g fill="#e8a04a" opacity="0.85">
-    <path d="M210 340 Q215 320 210 305 Q205 320 210 340"/>
-    <path d="M256 348 Q262 322 256 300 Q250 322 256 348"/>
-    <path d="M302 340 Q307 320 302 305 Q297 320 302 340"/>
+  <ellipse cx="256" cy="320" rx="170" ry="55" fill="url(#fire)" opacity="0.9"/>
+  <g opacity="0.85" filter="url(#wobble)">
+    <path d="M206 332 Q212 308 206 290 Q200 308 206 332" fill="#e88838"/>
+    <path d="M256 340 Q263 312 256 288 Q249 312 256 340" fill="#f0a838"/>
+    <path d="M306 332 Q312 308 306 290 Q300 308 306 332" fill="#e88838"/>
+    <path d="M256 334 Q260 316 256 300 Q252 316 256 334" fill="#ffe89a"/>
   </g>
-  <g fill="#ffd87a">
-    <path d="M256 342 Q260 326 256 312 Q252 326 256 342"/>
+  <g filter="url(#wobble)">
+    <path d="M82 298 Q62 298 62 322 Q62 346 82 346" fill="none" stroke="#0a0603" stroke-width="8" stroke-linecap="round"/>
+    <path d="M430 298 Q450 298 450 322 Q450 346 430 346" fill="none" stroke="#0a0603" stroke-width="8" stroke-linecap="round"/>
+    <path d="M82 298 Q62 298 62 322 Q62 346 82 346" fill="none" stroke="#4a3a20" stroke-width="3" stroke-linecap="round"/>
+    <path d="M430 298 Q450 298 450 322 Q450 346 430 346" fill="none" stroke="#4a3a20" stroke-width="3" stroke-linecap="round"/>
+    <path d="M96 290 Q96 280 116 278 L396 278 Q416 280 416 290 L400 430 Q398 454 372 456 L140 456 Q114 454 112 430 Z"
+          fill="url(#pot)" stroke="#0a0603" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M124 290 L118 424" fill="none" stroke="#4a3a20" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+    <path d="M388 290 L394 424" fill="none" stroke="#0a0603" stroke-width="2" opacity="0.8" stroke-linecap="round"/>
   </g>
-
-  <!-- 烹饪锅:粗糙墨线手绘风 -->
-  <!-- 锅耳(左右把手) -->
-  <path d="M88 305 Q70 305 70 325 Q70 345 88 345" fill="none" stroke="#1a1208" stroke-width="7" stroke-linecap="round"/>
-  <path d="M424 305 Q442 305 442 325 Q442 345 424 345" fill="none" stroke="#1a1208" stroke-width="7" stroke-linecap="round"/>
-  <path d="M88 305 Q70 305 70 325 Q70 345 88 345" fill="none" stroke="#5a4628" stroke-width="3" stroke-linecap="round"/>
-
-  <!-- 锅身:不规则手绘轮廓 -->
-  <path d="M100 295 Q100 285 118 283 L394 283 Q412 285 412 295 L398 425 Q396 448 372 450 L140 450 Q116 448 114 425 Z"
-        fill="url(#pot)" stroke="#1a1208" stroke-width="6" stroke-linejoin="round"/>
-  <!-- 锅身高光 -->
-  <path d="M125 295 L120 420" fill="none" stroke="#5a4628" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
-  <!-- 锅身交叉阴影(手绘排线) -->
-  <g stroke="#0a0604" stroke-width="1.8" opacity="0.7" stroke-linecap="round">
-    <line x1="150" y1="410" x2="165" y2="425"/>
-    <line x1="158" y1="408" x2="173" y2="423"/>
-    <line x1="166" y1="406" x2="181" y2="421"/>
-    <line x1="345" y1="410" x2="360" y2="425"/>
-    <line x1="353" y1="408" x2="368" y2="423"/>
-    <line x1="361" y1="406" x2="376" y2="421"/>
+  <g stroke="#0a0603" stroke-width="2" opacity="0.75" stroke-linecap="round">
+    <line x1="130" y1="412" x2="148" y2="430"/>
+    <line x1="138" y1="410" x2="156" y2="428"/>
+    <line x1="146" y1="408" x2="164" y2="426"/>
+    <line x1="154" y1="406" x2="172" y2="424"/>
+    <line x1="360" y1="412" x2="378" y2="430"/>
+    <line x1="368" y1="410" x2="386" y2="428"/>
+    <line x1="376" y1="408" x2="394" y2="426"/>
+    <line x1="352" y1="406" x2="370" y2="424"/>
   </g>
-
-  <!-- 锅口椭圆 -->
-  <ellipse cx="256" cy="283" rx="158" ry="26" fill="#0a0604" stroke="#1a1208" stroke-width="6"/>
-  <ellipse cx="256" cy="280" rx="152" ry="21" fill="#1a0e06"/>
-  <!-- 锅口高光 -->
-  <path d="M150 272 Q200 260 256 260" fill="none" stroke="#5a4628" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
-
-  <!-- 锅内食物 -->
-  <!-- 肉丸(中) -->
-  <circle cx="256" cy="276" r="36" fill="url(#meatball)" stroke="#1a1208" stroke-width="3.5"/>
-  <!-- 肉丸交叉阴影 -->
-  <g stroke="#3a2a14" stroke-width="1.5" opacity="0.7" stroke-linecap="round">
-    <line x1="244" y1="270" x2="252" y2="278"/>
-    <line x1="250" y1="268" x2="258" y2="276"/>
-    <line x1="256" y1="266" x2="264" y2="274"/>
+  <ellipse cx="256" cy="278" rx="162" ry="28" fill="#050302" stroke="#0a0603" stroke-width="6"/>
+  <ellipse cx="256" cy="275" rx="154" ry="22" fill="#120a04"/>
+  <path d="M148 266 Q200 254 256 254" fill="none" stroke="#4a3a20" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
+  <g filter="url(#wobble)">
+    <circle cx="256" cy="270" r="38" fill="url(#meatball)" stroke="#0a0603" stroke-width="4"/>
   </g>
-  <!-- 肉丸表情(饥荒风简单脸) -->
-  <circle cx="248" cy="272" r="2.5" fill="#1a1208"/>
-  <circle cx="264" cy="272" r="2.5" fill="#1a1208"/>
-  <path d="M248 284 Q256 290 264 284" fill="none" stroke="#1a1208" stroke-width="2" stroke-linecap="round"/>
-
-  <!-- 火龙果(左) -->
-  <circle cx="172" cy="278" r="28" fill="url(#dragon)" stroke="#1a1208" stroke-width="3.5"/>
-  <!-- 火龙果鳞片纹理 -->
-  <g fill="none" stroke="#5a1a2a" stroke-width="1.8" stroke-linecap="round">
-    <path d="M160 268 Q168 263 176 268"/>
-    <path d="M168 282 Q176 277 184 282"/>
-    <path d="M162 290 Q170 285 178 290"/>
+  <g stroke="#3a2410" stroke-width="1.8" opacity="0.7" stroke-linecap="round">
+    <line x1="240" y1="262" x2="250" y2="272"/>
+    <line x1="246" y1="260" x2="256" y2="270"/>
+    <line x1="252" y1="258" x2="262" y2="268"/>
+    <line x1="258" y1="256" x2="268" y2="266"/>
   </g>
-  <!-- 火龙果绿叶 -->
-  <g stroke="#3a6a2a" stroke-width="3" stroke-linecap="round" fill="#4a8a3a">
-    <path d="M172 252 L166 238"/>
-    <path d="M172 252 L178 238"/>
-    <path d="M172 252 L172 234"/>
+  <circle cx="246" cy="266" r="2.8" fill="#0a0603"/>
+  <circle cx="266" cy="266" r="2.8" fill="#0a0603"/>
+  <path d="M246 280 Q256 288 266 280" fill="none" stroke="#0a0603" stroke-width="2.2" stroke-linecap="round"/>
+  <g filter="url(#wobble)">
+    <circle cx="166" cy="274" r="30" fill="url(#dragon)" stroke="#0a0603" stroke-width="4"/>
   </g>
-
-  <!-- 胡萝卜(右) -->
-  <path d="M340 278 L322 308 L358 308 Z" fill="url(#carrot)" stroke="#1a1208" stroke-width="3.5" stroke-linejoin="round"/>
-  <!-- 胡萝卜纹理线 -->
-  <g stroke="#7a3a14" stroke-width="1.8" opacity="0.7" stroke-linecap="round">
-    <line x1="332" y1="288" x2="338" y2="292"/>
-    <line x1="342" y1="286" x2="348" y2="290"/>
-    <line x1="338" y1="296" x2="344" y2="300"/>
+  <g fill="none" stroke="#4a1428" stroke-width="2" stroke-linecap="round">
+    <path d="M152 262 Q160 256 168 262"/>
+    <path d="M160 278 Q168 272 176 278"/>
+    <path d="M154 288 Q162 282 170 288"/>
   </g>
-  <!-- 胡萝卜叶 -->
-  <g stroke="#3a6a2a" stroke-width="3" stroke-linecap="round" fill="#4a8a3a">
-    <path d="M340 278 L332 264"/>
-    <path d="M340 278 L348 264"/>
-    <path d="M340 278 L340 260"/>
+  <g stroke="#3a5a28" stroke-width="3.5" stroke-linecap="round" fill="#4a7a38">
+    <path d="M166 246 L158 230"/>
+    <path d="M166 246 L174 230"/>
+    <path d="M166 246 L166 226"/>
   </g>
-
-  <!-- 底部火光反射 -->
-  <g fill="none" stroke="#d9a441" stroke-width="3.5" opacity="0.6" stroke-linecap="round">
-    <path d="M170 460 Q190 478 210 462 Q230 480 250 464 Q270 480 290 462 Q310 478 330 464 Q350 478 370 460"/>
+  <g filter="url(#wobble)">
+    <path d="M346 274 L326 308 L366 308 Z" fill="url(#carrot)" stroke="#0a0603" stroke-width="4" stroke-linejoin="round"/>
   </g>
-  <!-- 火星 -->
-  <g fill="#ffd87a" opacity="0.7">
-    <circle cx="180" cy="220" r="2"/>
-    <circle cx="330" cy="215" r="2.5"/>
-    <circle cx="256" cy="200" r="1.8"/>
-    <circle cx="200" cy="240" r="1.5"/>
-    <circle cx="310" cy="235" r="2"/>
+  <g stroke="#5a2810" stroke-width="1.8" opacity="0.7" stroke-linecap="round">
+    <line x1="336" y1="286" x2="344" y2="290"/>
+    <line x1="346" y1="284" x2="354" y2="288"/>
+    <line x1="342" y1="296" x2="350" y2="300"/>
+  </g>
+  <g stroke="#3a5a28" stroke-width="3.5" stroke-linecap="round" fill="#4a7a38">
+    <path d="M346 274 L338 258"/>
+    <path d="M346 274 L354 258"/>
+    <path d="M346 274 L346 254"/>
+  </g>
+  <g fill="none" stroke="#d9a441" stroke-width="3.5" opacity="0.55" stroke-linecap="round" filter="url(#wobble)">
+    <path d="M150 470 Q175 490 200 472 Q225 492 250 474 Q275 492 300 472 Q325 490 350 474 Q375 490 396 470"/>
+  </g>
+  <g fill="#ffe89a" opacity="0.65">
+    <circle cx="176" cy="210" r="2.2"/>
+    <circle cx="336" cy="205" r="2.6"/>
+    <circle cx="256" cy="188" r="2"/>
+    <circle cx="196" cy="232" r="1.6"/>
+    <circle cx="316" cy="228" r="2"/>
+    <circle cx="226" cy="200" r="1.4"/>
+    <circle cx="286" cy="198" r="1.8"/>
   </g>
 </svg>
