@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14100c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="饥荒食谱">
+<meta name="description" content="饥荒单机版食谱图鉴·烹饪锅判定·仓库反查,离线可用">
+<title>饥荒食谱助手</title>
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"饥荒食谱助手","short_name":"饥荒食谱","start_url":".","display":"standalone","orientation":"portrait","background_color":"#14100c","theme_color":"#14100c","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}'>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{
+  --bg:#14100c; --bg2:#1d160f; --panel:#241a12; --panel2:#2e2218;
+  --ink:#e8dcc4; --ink-dim:#b3a487; --ink-mute:#7c6f5a;
+  --line:#3a2c1f; --line2:#4a3825;
+  --gold:#d9a441; --amber:#e8a04a;
+  --hp:#e25555; --hunger:#e8a04a; --sanity:#6a8cd0;
+  --veg:#7fb069; --fruit:#d96c6c; --egg:#e8c84a; --fish:#5aa6d8;
+  --monster:#9b6bb0; --sweet:#e8c84a; --inedible:#8a7a66; --frozen:#8ec5e8;
+  --dairy:#f0e6c8; --bug:#9bb86b; --deco:#e88ad0;
+  --shadow:0 4px 16px rgba(0,0,0,.4);
+  --r:14px;
+  --font-display:'Palatino Linotype','Book Antiqua',Palatino,'Songti SC','STSong',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','Hiragino Sans GB',sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-body); color:var(--ink); font-size:15px;
+  background:
+    radial-gradient(120% 70% at 50% -10%, #2a1f15 0%, transparent 60%),
+    #14100c;
+  background-attachment:fixed;
+  min-height:100vh; line-height:1.5; -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;
+}
+header{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:8px;
+  padding:10px 12px; padding-top:max(10px,env(safe-area-inset-top));
+  background:linear-gradient(180deg,#1a130d 0%, rgba(20,16,12,.94) 100%);
+  border-bottom:1px solid var(--line); backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1}
+.brand h1{font-family:var(--font-display);font-weight:700;font-size:18px;margin:0;color:var(--gold);white-space:nowrap;letter-spacing:.03em}
+.brand .sub{font-size:10px;color:var(--ink-mute);letter-spacing:.15em;text-transform:uppercase}
+.iconbtn{
+  background:var(--panel); border:1px solid var(--line); color:var(--ink-dim);
+  width:36px;height:36px;border-radius:10px; display:grid;place-items:center;
+  cursor:pointer; font-size:15px; transition:.15s; flex-shrink:0;
+}
+.iconbtn:hover{color:var(--gold);border-color:var(--line2)}
+.iconbtn.install{background:linear-gradient(180deg,var(--gold),#b8842e);color:#1a1208;border-color:var(--gold);font-weight:700;font-size:12px;padding:0 12px;width:auto;gap:4px}
+main{max-width:640px;margin:0 auto;padding:10px 10px 20px;position:relative;z-index:2}
+.view{display:none;animation:fade .22s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* toolbar */
+.toolrow{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.toolrow .lbl{font-size:12px;color:var(--gold);min-width:46px;font-family:var(--font-display);letter-spacing:.04em}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:0;flex:1;min-width:0}
+.seg{
+  background:var(--panel); color:var(--ink-dim); border:1px solid var(--line);
+  border-radius:10px; padding:8px 10px; font-size:12px; font-family:inherit; cursor:pointer;
+  flex:0 0 auto;
+}
+.chip{
+  font-size:12px; padding:5px 11px; border-radius:999px;
+  background:var(--panel); border:1px solid var(--line); color:var(--ink-dim);
+  cursor:pointer; transition:.15s; user-select:none; white-space:nowrap;
+}
+.chip.on{background:var(--gold);color:#1a1208;border-color:var(--gold);font-weight:600}
+.chip[data-dlc="通用"].on{background:#7a926e;color:#fff}
+.chip[data-dlc="海难"].on{background:#41a3c0;color:#fff}
+.chip[data-dlc="哈姆雷特"].on{background:#9d6fbf;color:#fff}
+.chip[data-eff="饱食"].on{background:#e0843a;color:#fff}
+.chip[data-eff="生命"].on{background:#c94a5a;color:#fff}
+.chip[data-eff="精神"].on{background:#6b7fc9;color:#fff}
+.chip[data-cat="肉食"].on{background:#c75a4a;color:#fff}
+.chip[data-cat="素食"].on{background:#6f9e5a;color:#fff}
+.chip[data-cat="甜点"].on{background:#d9a441;color:#1a1208}
+.chip[data-cat="特殊"].on{background:#8b6bb0;color:#fff}
+.chip.filter{font-size:11px;padding:4px 9px}
+
+/* TOP 横滑 */
+.top-wrap{margin-bottom:14px;display:flex;flex-direction:column;gap:14px}
+.top-block{background:linear-gradient(180deg,var(--panel2) 0%, var(--panel) 100%);border:1px solid var(--line);border-radius:14px;padding:10px 12px 8px;box-shadow:var(--shadow)}
+.top-title{font-family:var(--font-display);font-size:13px;color:var(--gold);margin:0 0 8px;letter-spacing:.05em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.top-reason{font-size:10px;color:var(--ink-mute);font-weight:400;letter-spacing:.02em}
+.top-scroll{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 0 6px;-webkit-overflow-scrolling:touch}
+.top-scroll::-webkit-scrollbar{height:3px}
+.top-scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+/* topcard:TOP 小卡片 */
+.topcard{
+  scroll-snap-align:start; flex:0 0 118px; background:var(--bg2);
+  border:1px solid var(--line2); border-radius:12px; padding:8px; cursor:pointer; transition:.15s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.topcard:active{transform:scale(.96)}
+.topcard .tpi{position:relative;width:60px;height:60px;border-radius:12px;background:var(--bg);overflow:hidden;display:grid;place-items:center;margin-bottom:2px}
+.topcard .tpi .fb{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;z-index:0}
+.topcard .tpi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.topcard .tname{font-size:12px;font-weight:700;color:var(--ink);text-align:center;line-height:1.2;font-family:var(--font-display)}
+.topcard .tmeta{font-size:10px;color:var(--ink-dim);text-align:center}
+.topcard .tscore{font-size:11px;color:var(--gold);font-weight:600}
+
+.top-card{
+  scroll-snap-align:start; flex:0 0 130px; background:linear-gradient(160deg,var(--panel2),var(--panel));
+  border:1px solid var(--line2); border-radius:12px; padding:10px; cursor:pointer; transition:.15s;
+}
+.top-card:active{transform:scale(.97)}
+.top-card .rk{font-size:10px;color:var(--ink-mute);letter-spacing:.1em}
+.top-card .tn{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--ink);margin:2px 0}
+.top-card .ts{font-size:11px;color:var(--gold);font-weight:600}
+.top-card .tst{font-size:11px;color:var(--ink-dim);margin-top:3px}
+
+/* 食物卡片 */
+.list{display:flex;flex-direction:column;gap:8px}
+.card{
+  background:linear-gradient(180deg,var(--panel2) 0%, var(--panel) 100%);
+  border:1px solid var(--line); border-radius:var(--r); padding:11px 12px;
+  box-shadow:var(--shadow); position:relative; transition:.15s;
+}
+.card:active{transform:scale(.99)}
+.card.hl{animation:hl 1.2s ease-in-out}
+@keyframes hl{0%,100%{box-shadow:var(--shadow)} 25%{box-shadow:0 0 0 3px rgba(217,164,65,.55),0 8px 24px rgba(0,0,0,.3)} 50%{box-shadow:0 0 0 5px rgba(217,164,65,.35)}}
+.card .head{display:flex;align-items:center;gap:10px}
+.card .emoji{font-size:24px;line-height:1;flex-shrink:0;width:48px;height:48px;text-align:center;position:relative;border-radius:12px;overflow:hidden;background:var(--bg2)}
+.card .emoji .fb{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;z-index:0}
+.card .emoji img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.card .info{flex:1;min-width:0}
+.card .name{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:.01em;line-height:1.2}
+.card .name .en2{font-size:10px;color:var(--ink-mute);letter-spacing:.1em;text-transform:uppercase;font-weight:400;margin-left:4px}
+.card .stars{margin:3px 0 4px;letter-spacing:1px;font-size:11px}
+.card .stars .pt{color:#3a2c1f}
+.card .stars .pt.on{color:var(--gold)}
+.card .stats{display:flex;gap:10px;flex-wrap:wrap}
+.card .stat{display:flex;align-items:baseline;gap:2px;font-size:14px;font-weight:700}
+.card .stat i{font-size:9px;color:var(--ink-mute);font-style:normal;margin-left:1px}
+.card .score{font-size:9px;color:var(--ink-mute);font-weight:600;text-align:right;flex-shrink:0;letter-spacing:.05em}
+.card .score b{font-size:18px;display:block;color:var(--gold);font-family:var(--font-display);line-height:1.1}
+.card .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.card .tag{font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.03em;background:#3a2c1f;color:var(--ink-dim)}
+.card .tag.cat{background:rgba(217,164,65,.16);color:var(--gold)}
+.card .tag.dlc{color:var(--amber);background:rgba(226,168,70,.1)}
+.card .tag.feat{background:#2a2018;color:var(--ink)}
+.card .meta-row{display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--ink-mute);flex-wrap:wrap}
+.req{font-size:12px;color:var(--ink-dim);margin-top:7px;line-height:1.5}
+.req .lab{color:var(--ink-mute);font-size:11px}
+.req .mat{color:var(--ink);background:#2a2018;padding:1px 6px;border-radius:4px;margin:0 2px;display:inline-block}
+.req .deg{font-size:11px;color:var(--gold)}
+.req .alts{font-size:10px;color:var(--ink-mute);margin-left:2px}
+.info-block{margin-top:8px;padding:0;border-left:2px solid var(--line2);padding-left:9px}
+.formula{font-size:12px;color:var(--ink);line-height:1.6;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.formula .lab{color:#7ba76e;font-size:11px;font-weight:600;margin-right:2px}
+.formula .plus{color:var(--ink-mute);font-size:11px}
+.caution{font-size:11px;color:#e8a87c;line-height:1.5;margin-top:5px;padding-top:5px;border-top:1px dashed rgba(232,168,124,.3)}
+.mchip{display:inline-flex;align-items:center;gap:3px;background:#2a2018;border:1px solid var(--line2);border-radius:5px;padding:1px 5px 1px 2px;vertical-align:middle}
+.mchip img{width:20px;height:20px;border-radius:3px;object-fit:cover}
+.mchip .mc-emoji{font-size:14px;width:20px;height:20px;display:grid;place-items:center}
+.mchip i{font-style:normal;font-size:11px;color:var(--ink)}
+.mchip.deg-chip{background:rgba(217,164,65,.1);border-color:rgba(217,164,65,.3)}
+.mchip.deg-chip i{color:var(--gold)}
+.mchip.deg-label{background:rgba(217,164,65,.18);border-color:rgba(217,164,65,.4)}
+.mchip.deg-label i{color:var(--gold);font-weight:600}
+.mchip.mchip-alt{background:#2a2018;border-color:var(--line2)}
+.mchip.fill-chip{background:rgba(123,167,106,.12);border-color:rgba(123,167,106,.35)}
+.mchip.fill-chip i{color:#7ba76e}
+.mchip.ban-chip{background:rgba(226,85,85,.1);border-color:rgba(226,85,85,.3)}
+.mchip.ban-chip i{color:var(--hp)}
+.slash{color:var(--ink-mute);font-size:10px;margin:0 1px}
+.caution{font-size:11px;color:#e8a87c;line-height:1.5;margin-top:5px;padding-top:5px;border-top:1px dashed rgba(232,168,124,.3)}
+.primary-mark{background:linear-gradient(90deg,rgba(217,164,65,.2),transparent);color:var(--gold);font-size:12px;font-weight:700;padding:5px 9px;border-radius:6px 6px 0 0;margin-top:8px;letter-spacing:.03em}
+.rec-badge{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;letter-spacing:.05em}
+.rec-badge.r5{background:#d9a441;color:#1a1208}
+.rec-badge.r4{background:#8b6bb0;color:#fff}
+.rec-badge.r3{background:#5c7aa8;color:#fff}
+.rec-badge.r2{background:#6b6b6b;color:#fff}
+.rec-badge.r1{background:#3a2c1f;color:var(--ink-mute)}
+.detail{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11px;color:var(--ink-mute);word-break:break-all}
+.card.open .detail{display:block}
+/* 生食材卡片 */
+.raw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.raw-state{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:7px 9px}
+.rs-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:5px;font-family:var(--font-display)}
+.rs-stats{display:flex;gap:8px;flex-wrap:wrap}
+.rs-stats span{font-size:14px;font-weight:700;display:flex;align-items:baseline;gap:1px}
+.rs-stats span i{font-size:9px;color:var(--ink-mute);font-style:normal}
+
+/* 烹饪锅 */
+.pot-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.pot-count{font-family:var(--font-display);font-size:13px;color:var(--gold);font-weight:700}
+.pot-svg{filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:420px}
+.slot{
+  aspect-ratio:1; background:var(--bg2); border:2px dashed var(--line);
+  border-radius:14px; display:grid; place-items:center; cursor:pointer;
+  text-align:center; font-size:10px; color:var(--ink-mute); padding:2px; transition:.15s;
+  word-break:break-all; position:relative; overflow:hidden;
+}
+.slot.filled{border-style:solid;border-color:var(--gold);color:var(--ink);background:var(--panel2)}
+.slot.filled .simg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.slot.filled .sl{position:relative;z-index:1;background:rgba(20,16,12,.7);padding:1px 4px;border-radius:4px;font-size:10px;font-weight:600}
+.slot .ph{font-size:20px;color:var(--ink-mute);opacity:.5}
+.mat-pick{margin-top:14px}
+.matgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px;margin-top:8px}
+.btn{
+  background:linear-gradient(180deg,var(--gold) 0%, #b8842e 100%); color:#1a1208;
+  border:none; border-radius:12px; padding:11px 20px; font-size:14px; font-weight:700;
+  font-family:inherit; cursor:pointer; letter-spacing:.03em; transition:.15s; box-shadow:var(--shadow);
+}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--panel);color:var(--ink-dim);border:1px solid var(--line);box-shadow:none}
+.btn.sm{padding:8px 14px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.result{width:100%;max-width:520px;max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}
+.expand-btn{display:block;width:100%;padding:10px;margin:8px 0 0;background:var(--panel);border:1px dashed var(--line2);border-radius:8px;color:var(--gold);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;text-align:center}
+.expand-btn:active{transform:scale(.98)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.hint{font-size:11px;color:var(--ink-mute);text-align:center;margin-top:6px}
+
+/* picker modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(8,6,4,.72);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
+.modal.open{display:flex;animation:fade .2s}
+.sheet{
+  background:var(--bg2); border:1px solid var(--line2); border-bottom:none;
+  border-radius:18px 18px 0 0; width:100%; max-width:640px; max-height:80vh;
+  display:flex; flex-direction:column; overflow:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sheet-head .t{font-family:var(--font-display);font-size:15px;color:var(--gold);flex:1}
+.sheet-body{overflow-y:auto;padding:10px 12px 16px;-webkit-overflow-scrolling:touch}
+.matgroup{margin-bottom:12px}
+.matgroup h4{font-size:10px;color:var(--ink-mute);letter-spacing:.12em;text-transform:uppercase;margin:0 0 6px}
+.matgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:4px}
+.mat{
+  background:var(--panel); border:1px solid var(--line); border-radius:7px;
+  padding:3px 2px; text-align:center; cursor:pointer; transition:.12s; position:relative;
+}
+.mat .mimg{width:100%;aspect-ratio:1;border-radius:5px;overflow:hidden;background:var(--bg2);margin-bottom:2px;position:relative}
+.mat .mimg .mfb{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:var(--ink-mute);font-weight:700}
+.mat .mimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.mat:active{transform:scale(.95)}
+.mat .mn{font-size:9px;color:var(--ink);font-weight:600;line-height:1.1}
+.mat .mv{display:none}
+.mat.sel{border-color:var(--gold);background:rgba(217,164,65,.16)}
+.mat .cnt{position:absolute;top:-4px;right:-4px;background:var(--gold);color:#1a1208;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:grid;place-items:center}
+
+/* pantry */
+.pantry-list{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.ptag{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:5px}
+.ptag .qt{color:var(--gold);font-weight:600}
+.ptag .rm{cursor:pointer;color:var(--ink-mute);font-size:14px;line-height:1} .ptag .rm:active{color:var(--hp)}
+
+/* 度值小标签 */
+.dval{font-size:9px;display:inline-block;padding:1px 4px;border-radius:3px;margin:1px;line-height:1.3}
+
+/* tests */
+.test-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dot.ok{background:#7fb069} .dot.no{background:var(--hp)}
+.test-sum{font-family:var(--font-display);font-size:20px;color:var(--gold);margin:4px 0 10px}
+
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:linear-gradient(0deg,#16110c 0%,rgba(22,17,12,.97) 100%);border-top:1px solid var(--line);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
+.nav-inner{max-width:640px;margin:0 auto;display:flex}
+.tab{flex:1;background:none;border:none;color:var(--ink-mute);font-family:inherit;padding:8px 2px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;transition:.15s}
+.tab .ti{font-size:20px;line-height:1}
+.tab.on{color:var(--gold)}
+.tab.on .ti{transform:translateY(-1px)}
+
+.empty{text-align:center;color:var(--ink-mute);padding:32px 12px;font-size:13px}
+.section-title{font-family:var(--font-display);color:var(--gold);font-size:15px;margin:2px 0 10px;letter-spacing:.04em}
+.desc{font-size:12px;color:var(--ink-dim);margin:-4px 0 10px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>饥荒食谱助手</h1><span class="sub">单机版</span></div>
+  <button class="iconbtn install" id="installBtn" hidden>⬇安装</button>
+  <button class="iconbtn" id="testBtn" title="自测">✓</button>
+</header>
+
+<main>
+  <!-- 图鉴(多维筛选 + 各分类高性价推荐) -->
+  <section id="view-codex" class="view active">
+    <div class="toolrow">
+      <div class="lbl">📦 DLC</div>
+      <div class="chips" id="dlcChips"></div>
+    </div>
+    <div class="toolrow">
+      <div class="lbl">🎯 效果</div>
+      <div class="chips" id="effectChips"></div>
+    </div>
+    <div class="toolrow">
+      <div class="lbl">🍽️ 类型</div>
+      <div class="chips" id="catChips"></div>
+    </div>
+    <div class="top-wrap" id="topWrap"></div>
+    <div class="section-title" id="listTitle" style="margin:14px 0 4px"></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <!-- 烹饪锅 -->
+  <section id="view-pot" class="view">
+    <div class="section-title">🍲 烹饪锅</div>
+    <p class="desc">点下方材料放入锅(最多4格,同材料可多次点选)·点锅口材料取出。实时显示可匹配食谱。</p>
+    <div class="pot-wrap">
+      <svg class="pot-svg" width="130" height="104" viewBox="0 0 150 120">
+        <ellipse cx="75" cy="110" rx="56" ry="7" fill="#000" opacity=".4"/>
+        <path d="M20 55 Q20 105 75 105 Q130 105 130 55 Z" fill="#2a2018" stroke="#5a4631" stroke-width="3"/>
+        <path d="M20 55 Q75 70 130 55" fill="none" stroke="#5a4631" stroke-width="3"/>
+        <ellipse cx="75" cy="55" rx="55" ry="10" fill="#3a2c1f"/>
+        <ellipse cx="75" cy="55" rx="47" ry="6" fill="#1a130d"/>
+        <rect x="12" y="50" width="11" height="13" rx="3" fill="#3a2c1f"/>
+        <rect x="127" y="50" width="11" height="13" rx="3" fill="#3a2c1f"/>
+      </svg>
+      <div class="pot-count" id="potCount">0/4</div>
+      <div class="slots" id="slots"></div>
+      <div class="row">
+        <button class="btn ghost sm" id="clearPot">清空锅</button>
+      </div>
+      <div class="result" id="potResult"></div>
+    </div>
+    <div class="mat-pick">
+      <div class="chips" id="potGroupChips"></div>
+      <div class="matgrid" id="potMatGrid"></div>
+    </div>
+  </section>
+
+  <!-- 自测 -->
+  <section id="view-test" class="view">
+    <div class="section-title">✓ 判定引擎自测</div>
+    <p class="desc">运行 20 组权威验收用例,验证判定引擎与数据一致性。</p>
+    <button class="btn" id="runTests" style="width:100%">运行 20 组用例</button>
+    <div id="testOut" style="margin-top:12px"></div>
+  </section>
+</main>
+
+<div class="modal" id="pickerModal">
+  <div class="sheet">
+    <div class="sheet-head"><span class="t" id="pickerTitle">选择材料</span><button class="iconbtn" id="pickerClose">✕</button></div>
+    <div class="sheet-body" id="pickerBody"></div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-inner">
+    <button class="tab on" data-v="codex"><span class="ti">📖</span>图鉴</button>
+    <button class="tab" data-v="pot"><span class="ti">🍲</span>烹饪</button>
+  </div>
+</nav>
+
+<script id="app-data" type="application/json">{"materials":{"怪物肉":{"meat":1,"monster":1},"大肉":{"meat":1},"小肉":{"meat":0.5},"鸡腿":{"meat":0.5},"蛙腿":{"meat":0.5},"鱼":{"meat":0.5,"fish":1},"鳗鱼":{"meat":0.5,"fish":1},"龙虾":{"fish":2},"帽贝":{"fish":0.5},"贻贝":{"fish":0.5},"水母":{"fish":1,"monster":1},"鲨鱼鳍":{"meat":0.5,"fish":1},"鱼子":{"meat":0.5,"fish":1},"紫石斑鱼":{"meat":0.5,"fish":1},"霓虹鱼":{"meat":0.5,"fish":1},"小丑鱼":{"meat":0.5,"fish":1},"叶肉":{"meat":1},"蝙蝠翅膀":{"meat":0.5},"鼹鼠":{"meat":0.5},"蛇骨":{"inedible":1},"蝴蝶翅膀":{"deco":2},"胡萝卜":{"veg":1},"红蘑菇":{"veg":0.5},"蓝蘑菇":{"veg":0.5},"绿蘑菇":{"veg":0.5},"南瓜":{"veg":1},"茄子":{"veg":1},"玉米":{"veg":1},"仙人掌肉":{"veg":1},"海带":{"veg":1},"芦笋":{"veg":1},"荨麻":{"veg":0.5},"蕨类":{"veg":1},"萝卜":{"veg":1},"苔藓":{"veg":1},"红薯":{"veg":1},"曼德拉草":{"veg":1},"仙人掌花":{"veg":1},"火龙果":{"fruit":1},"石榴":{"fruit":1},"香蕉":{"fruit":1},"榴莲":{"fruit":1,"monster":1},"西瓜":{"fruit":1},"浆果":{"fruit":0.5},"椰子":{"fruit":0.5},"咖啡豆":{"fruit":0.5},"烤咖啡豆":{"fruit":1},"鸡蛋":{"egg":1},"高脚鸟蛋":{"egg":4},"蜂蜜":{"sweetener":1},"黄油":{"dairy":1},"树枝":{"inedible":1},"冰":{"frozen":1},"甲虫壳":{"bug":1},"豆虫":{"bug":1},"桦树果":{},"糖蛞蝓":{},"橙色皮克鼠":{}},"scarcity":{"浆果":1,"冰":1,"树枝":1,"胡萝卜":1,"仙人掌肉":1,"红蘑菇":1,"蓝蘑菇":1,"绿蘑菇":1,"桦树果":1,"海带":1,"椰子":1,"萝卜":1,"红薯":1,"怪物肉":2,"小肉":2,"鸡腿":2,"蛙腿":2,"鱼":2,"鳗鱼":2,"蝴蝶翅膀":2,"蝙蝠翅膀":2,"帽贝":2,"贻贝":2,"水母":2,"芦笋":2,"荨麻":2,"豆虫":2,"蕨类":2,"鸡蛋":2,"苔藓":2,"鼹鼠":2,"大肉":3,"蜂蜜":3,"南瓜":3,"茄子":3,"玉米":3,"高脚鸟蛋":3,"叶肉":3,"龙虾":3,"鲨鱼鳍":3,"甲虫壳":3,"鱼子":3,"紫石斑鱼":4,"霓虹鱼":4,"小丑鱼":4,"橙色皮克鼠":3,"西瓜":3,"糖蛞蝓":3,"火龙果":4,"石榴":4,"香蕉":4,"榴莲":4,"仙人掌花":4,"咖啡豆":4,"烤咖啡豆":4,"蛇骨":4,"黄油":5,"曼德拉草":6},"recipes":[{"id":"tropicalbouillabaisse","name":"热带炖汤","en":"Tropical Bouillabaisse","priority":35,"cat":"肉食","hp":20,"hunger":37.5,"sanity":15,"spoil":10,"cook":40,"cost":3,"dlc":"海难","rule":"t.n[\"紫石斑鱼\"]&&t.n[\"霓虹鱼\"]&&t.n[\"小丑鱼\"]&&t.v.veg>=1","stars":3,"caution":"3种热带鱼+蔬菜度≥1;紫石斑鱼+霓虹鱼+小丑鱼+蔬菜；3种热带鱼+蔬菜，海难回血回精神好菜。"},{"id":"coffee","name":"咖啡","en":"Coffee","priority":30,"cat":"特殊","hp":3,"hunger":9.375,"sanity":-5,"spoil":10,"cook":10,"cost":4,"dlc":"海难","rule":"t.n[\"烤咖啡豆\"]>=3&&t.mats.every(m=>[\"烤咖啡豆\",\"黄油\",\"蜂蜜\"].includes(m))","stars":5,"caution":"需烤咖啡豆≥4;4烤咖啡豆 或 3烤咖啡豆+填充;+5移速半天,赶路神器；海难第一料理：+5移速持续半天，赶路神器。"},{"id":"feijoada","name":"巴西炖豆","en":"Feijoada","priority":30,"cat":"肉食","hp":20,"hunger":75,"sanity":15,"spoil":8,"cook":70,"cost":3,"dlc":"哈姆雷特","rule":"t.n[\"豆虫\"]>=3&&t.v.meat>=.5","stars":4,"caution":"需豆虫度≥3;3豆虫+1肉;回饱回san都不错；豆虫×3+肉，回饱回精神都不错。"},{"id":"musselbouillabaisse","name":"贻贝炖汤","en":"Mussel Bouillabaisse","priority":30,"cat":"肉食","hp":20,"hunger":37.5,"sanity":15,"spoil":10,"cook":40,"cost":2,"dlc":"海难","rule":"t.n[\"贻贝\"]>=2&&t.v.veg>=2","stars":4,"caution":"需贻贝≥2+菜度≥2;2贻贝+2蔬菜;Warly便携锅专属；生贻贝×2+蔬菜值2.0，海难 Warly 便携锅专属，回血回饱回精神均衡。"},{"id":"bisque","name":"帽贝浓汤","en":"Bisque","priority":30,"cat":"肉食","hp":60,"hunger":18.75,"sanity":5,"spoil":10,"cook":20,"cost":2,"dlc":"海难","rule":"t.n[\"帽贝\"]>=3&&t.n[\"冰\"]>=1","stars":4,"caution":"需帽贝≥3;3帽贝+1冰;60血补血神器；3帽贝+冰，60血，材料易得，公认补血神器。"},{"id":"lobsterbisque","name":"龙虾汤","en":"Lobster Bisque","priority":30,"cat":"肉食","hp":60,"hunger":25,"sanity":10,"spoil":10,"cook":10,"cost":3,"dlc":"海难","rule":"t.n[\"龙虾\"]>=1&&t.n[\"冰\"]>=1","stars":4,"caution":"需龙虾≥1;龙虾+3冰;60血；活龙虾+冰，60血，前期补血好用。"},{"id":"surfturf","name":"海鲜牛排","en":"Surf 'n' Turf","priority":30,"cat":"肉食","hp":60,"hunger":37.5,"sanity":33,"spoil":10,"cook":20,"cost":3,"dlc":"海难","rule":"t.v.meat>=2.5&&t.v.fish>=1.5&&!t.n[\"冰\"]","stars":4,"caution":"需鱼度≥1且肉度≥1;鱼+肉+2填充;海难最强综合料理；60血+33精神，海难最强综合料理。"},{"id":"icedtea","name":"凉茶","en":"Iced Tea","priority":30,"cat":"特殊","hp":3,"hunger":12.5,"sanity":33,"spoil":6,"cook":10,"cost":3,"dlc":"哈姆雷特","rule":"t.n[\"橙色皮克鼠\"]>=2&&t.v.sweetener>=1&&t.n[\"冰\"]>=1&&!t.v.meat&&!t.v.veg&&!t.v.inedible","stars":3,"caution":"需橙色皮克鼠≥2+甜味剂+冰;回san+降温；橙色皮克鼠×2+甜味剂+冰，补精神+降温。"},{"id":"crepes","name":"鲜果可丽饼","en":"Fresh Fruit Crepes","priority":30,"cat":"甜点","hp":60,"hunger":150,"sanity":15,"spoil":10,"cook":40,"cost":4,"dlc":"海难","rule":"t.v.fruit>=1.5&&t.n[\"黄油\"]>=1&&t.v.sweetener>=1","stars":5,"caution":"需水果度≥1.5+黄油+蜂蜜;Warly便携锅专属;60血150饱15san豪华；水果+黄油+蜂蜜，60血150饱，海难 Warly 便携锅专属的豪华甜点。"},{"id":"sweetpotatosouffle","name":"红薯舒芙蕾","en":"Sweet Potato Souffle","priority":30,"cat":"素食","hp":20,"hunger":37.5,"sanity":15,"spoil":10,"cook":40,"cost":2,"dlc":"海难","rule":"t.n[\"红薯\"]>=2&&t.v.egg>=2","stars":4,"caution":"需红薯度≥2+蛋度≥2;Warly便携锅专属;用烤红薯会做成蔬菜杂烩；生红薯×2+蛋值2.0（1 高脚鸟蛋或 2 鸡蛋），海难 Warly 便携锅专属；用烤红薯会做成蔬菜杂烩。"},{"id":"lobsterdinner","name":"龙虾大餐","en":"Lobster Dinner","priority":25,"cat":"肉食","hp":60,"hunger":37.5,"sanity":50,"spoil":15,"cook":20,"cost":4,"dlc":"海难","rule":"t.n[\"龙虾\"]>=1&&t.n[\"黄油\"]>=1&&!t.v.meat&&!t.n[\"冰\"]","stars":2,"caution":"需活龙虾+黄油+1填充;60血50san但造价贵(还能换船炮)；60血50精神，但需活龙虾+黄油，还能换船炮。"},{"id":"tea","name":"茶","en":"Tea","priority":25,"cat":"特殊","hp":3,"hunger":12.5,"sanity":33,"spoil":1,"cook":10,"cost":3,"dlc":"哈姆雷特","rule":"t.n[\"橙色皮克鼠\"]>=2&&t.v.sweetener>=1&&!t.v.meat&&!t.v.veg&&!t.v.inedible&&!t.n[\"冰\"]&&!t.v.bug","stars":3,"caution":"需橙色皮克鼠≥2+甜味剂+填充;回san+升温;1天后变凉茶；橙色皮克鼠×2+甜味剂+填充，补精神33+加速升温；1天后变凉茶。"},{"id":"californiaroll","name":"加州卷","en":"California Roll","priority":20,"cat":"肉食","hp":20,"hunger":37.5,"sanity":10,"spoil":10,"cook":10,"cost":2,"dlc":"海难","rule":"t.n[\"海带\"]>=2&&t.v.fish>=1","stars":4,"caution":"需海带度≥1且鱼度≥1;2海带+2鱼是经典;鱼度不能过高(否则出鱼塔可)；海带×2+鱼，回血回饱适中。"},{"id":"caviar","name":"鱼子酱","en":"Caviar","priority":20,"cat":"特殊","hp":3,"hunger":12.5,"sanity":33,"spoil":10,"cook":40,"cost":4,"dlc":"海难","rule":"t.n[\"鱼子\"]>=1&&t.v.veg>=1","stars":2,"caution":"需鱼子≥1;鱼子+3填充;海难回san好菜；生鱼子+蔬菜+填充，补精神33；鱼子稀贵。"},{"id":"ceviche","name":"酸橘汁腌鱼","en":"Ceviche","priority":20,"cat":"肉食","hp":20,"hunger":25,"sanity":5,"spoil":10,"cook":10,"cost":2,"dlc":"海难","rule":"t.n[\"冰\"]>=1&&t.v.fish>=2","stars":3,"caution":"需鱼度≥2;2鱼+2冰;回血20回饱25；鱼×2+冰，可降温。"},{"id":"unagi","name":"鳗鱼饭","en":"Unagi","priority":20,"cat":"肉食","hp":20,"hunger":18.75,"sanity":5,"spoil":10,"cook":10,"cost":2,"dlc":"原版","rule":"t.n[\"鳗鱼\"]>=1&&t.n[\"苔藓\"]>=1","stars":3,"caution":"鳗鱼+苔藓(海带);鳗鱼需地下二层;回血20不错；鳗鱼+苔藓+填充，低血量应急回血；洞穴里可顺手做。"},{"id":"bananapop","name":"香蕉冻","en":"Banana Pop","priority":20,"cat":"甜点","hp":20,"hunger":12.5,"sanity":33,"spoil":3,"cook":10,"cost":2,"dlc":"海难","rule":"t.n[\"香蕉\"]>=1&&t.n[\"冰\"]>=1&&t.v.inedible>=1&&!t.v.meat&&!t.v.fish","stars":3,"caution":"需香蕉≥1+树枝≥1;香蕉+树枝+2冰;海难降温料理；补精神+降温，但保质仅 3 天。"},{"id":"jellyopop","name":"水母汽水","en":"Jelly-O Pop","priority":20,"cat":"肉食","hp":20,"hunger":12.5,"sanity":0,"spoil":3,"cook":10,"cost":2,"dlc":"海难","rule":"t.n[\"水母\"]>=1&&t.n[\"冰\"]>=1&&t.v.inedible>=1","stars":3,"caution":"需水母度≥1;水母+2冰+填充；水母+冰+树枝，降温，回血20。"},{"id":"sharkfinsoup","name":"鱼翅汤","en":"Shark Fin Soup","priority":20,"cat":"肉食","hp":40,"hunger":12.5,"sanity":-10,"spoil":10,"cook":10,"cost":3,"dlc":"海难","rule":"t.n[\"鲨鱼鳍\"]>=1","stars":2,"caution":"需鲨鱼鳍≥1;鲨鱼鳍+3填充;扣20san,性价比低；回血40但掉10精神；还能加淘气值。"},{"id":"snakebonesoup","name":"蛇骨汤","en":"Snake Bone Soup","priority":20,"cat":"肉食","hp":40,"hunger":25,"sanity":10,"spoil":10,"cook":20,"cost":4,"dlc":"哈姆雷特","rule":"t.n[\"蛇骨\"]>=2&&t.v.meat>=2","stars":3,"caution":"需蛇骨≥2;2蛇骨+肉+填充;回san33；蛇骨×2+肉，回血40，但蛇骨难得。"},{"id":"spicyvegstinger","name":"辣蔬菜汁","en":"Spicy Vegetable Stinger","priority":15,"cat":"素食","hp":3,"hunger":25,"sanity":33,"spoil":15,"cook":10,"cost":3,"dlc":"哈姆雷特","rule":"(t.n[\"芦笋\"]>=1||t.n[\"萝卜\"]>=1)&&t.n[\"冰\"]>=1&&t.v.veg>=1.5","stars":3,"caution":"需菜度≥2+甜味剂;回san33；芦笋/萝卜+冰+蔬菜，共4格，补精神33。"},{"id":"mandrake","name":"曼德拉草汤","en":"Mandrake Soup","priority":10,"cat":"特殊","hp":100,"hunger":150,"sanity":5,"spoil":6,"cook":60,"cost":6,"dlc":"原版","rule":"t.n[\"曼德拉草\"]>=1","stars":3,"caution":"曼德拉草+3填充;曼德拉草全图稀有,公认该留做排笛；数值虽高，但曼德拉草全图仅数个，别煮汤。"},{"id":"monsterlasagna","name":"怪物千层饼","en":"Monster Lasagna","priority":10,"cat":"肉食","hp":-20,"hunger":37.5,"sanity":-20,"spoil":10,"cook":10,"cost":2,"dlc":"原版","rule":"t.v.monster>=2&&!t.v.inedible","stars":2,"caution":"需怪物度≥2;混入树枝/蜂蜜可避免(改出肉丸);韦伯吃无负面；负面食物：掉血掉精神，别吃。"},{"id":"fishsticks","name":"鱼排","en":"Fishsticks","priority":10,"cat":"肉食","hp":40,"hunger":37.5,"sanity":5,"spoil":10,"cook":40,"cost":2,"dlc":"原版","rule":"t.v.fish>=1&&t.v.inedible===1","stars":5,"caution":"需鱼度≥0.5且树枝≥1;鱼+树枝+2填充;不能全用鱼(否则出鱼塔可)；高额回血（40），材料便宜，公认回血好物。优先级 10，高于烤肉串（5）。"},{"id":"fishtacos","name":"鱼塔可","en":"Fish Tacos","priority":10,"cat":"肉食","hp":20,"hunger":37.5,"sanity":5,"spoil":6,"cook":10,"cost":2,"dlc":"巨人国","rule":"t.n[\"玉米\"]>=1&&t.v.fish>=.25","stars":4,"caution":"需鱼度≥1+玉米≥1;鱼+玉米+2填充;保质期短；鱼+玉米+填充，回血20；wiki 建议鱼多时做鱼排更划算。"},{"id":"bacon","name":"培根煎蛋","en":"Bacon and Eggs","priority":10,"cat":"肉食","hp":20,"hunger":75,"sanity":5,"spoil":20,"cook":40,"cost":2,"dlc":"原版","rule":"t.v.meat>1&&t.v.egg>1&&!t.v.veg","stars":5,"caution":"需蛋度≥2且肉度≥1;高鸟蛋+2怪物肉+树枝是稳配方;2鸡蛋+1肉+1填充更易得；保质期长（20 天），回血回饱均衡。需鸟笼产蛋。"},{"id":"asparagussoup","name":"芦笋汤","en":"Asparagus Soup","priority":10,"cat":"素食","hp":20,"hunger":18.75,"sanity":5,"spoil":15,"cook":10,"cost":2,"dlc":"哈姆雷特","rule":"t.n[\"芦笋\"]>=1&&t.v.veg>=.5","stars":3,"caution":"需芦笋≥1+菜度≥1;芦笋+蔬菜+2填充；芦笋+蔬菜，回血20。"},{"id":"turkey","name":"火鸡大餐","en":"Turkey Dinner","priority":10,"cat":"肉食","hp":20,"hunger":75,"sanity":5,"spoil":6,"cook":60,"cost":2,"dlc":"原版","rule":"t.n[\"鸡腿\"]>=2&&t.v.meat>0&&(t.v.veg>=.5||t.v.fruit>=.5)","stars":4,"caution":"需鸡腿≥2+肉度≥1;2鸡腿+1肉+1填充;保质期长；回饱好，但保质期短（6 天）。"},{"id":"powdercake","name":"粉末蛋糕","en":"Powdercake","priority":10,"cat":"甜点","hp":-3,"hunger":0,"sanity":0,"spoil":18750,"cook":10,"cost":2,"dlc":"原版","rule":"t.n[\"玉米\"]>=1&&t.v.sweetener>=1&&t.v.inedible===1","stars":1,"caution":"2树枝+2玉米;保质期1.8万天,用于火鸡诱饵,不可食用；几乎永不腐烂（18750天）的彩蛋菜，掉血无饱食，可当永久诱饵。"},{"id":"pumpkincookies","name":"南瓜饼干","en":"Pumpkin Cookies","priority":10,"cat":"甜点","hp":0,"hunger":37.5,"sanity":15,"spoil":10,"cook":40,"cost":3,"dlc":"原版","rule":"t.n[\"南瓜\"]>=1&&t.v.sweetener>=2","stars":3,"caution":"需南瓜≥1且蜂蜜≥1;南瓜+蜂蜜+2填充；补精神（15）。"},{"id":"flowersalad","name":"花沙拉","en":"Flower Salad","priority":10,"cat":"素食","hp":40,"hunger":12.5,"sanity":5,"spoil":6,"cook":10,"cost":4,"dlc":"巨人国","rule":"t.n[\"仙人掌花\"]>=1&&t.v.veg>=1.5&&!t.v.fruit&&!t.v.meat&&!t.v.egg&&!t.v.sweetener&&!t.v.inedible","stars":3,"caution":"需仙人掌花≥1且菜度≥2;3萝卜+仙人掌花;秋天无仙人掌花；回血（40），但需夏季沙漠采仙人掌花。"},{"id":"spicychili","name":"辣椒炖肉","en":"Spicy Chili","priority":10,"cat":"肉食","hp":20,"hunger":37.5,"sanity":0,"spoil":10,"cook":10,"cost":3,"dlc":"巨人国","rule":"t.v.veg>=1.5&&t.v.meat>=1.5","stars":3,"caution":"需肉度≥1且菜度≥1;大肉+怪物肉+2蔬菜;保质期短；肉+蔬菜对半，冬日暖身。"},{"id":"icecream","name":"冰激凌","en":"Ice Cream","priority":10,"cat":"甜点","hp":0,"hunger":25,"sanity":50,"spoil":3,"cook":10,"cost":5,"dlc":"巨人国","rule":"t.n[\"冰\"]>=1&&t.v.dairy>=1&&t.v.sweetener>=1&&!t.v.meat&&!t.v.egg&&!t.v.veg&&!t.v.inedible","stars":3,"caution":"需乳制品+冰+蜂蜜+甜味剂/水果;黄油/羊奶均可;保质期极短(3天)；精神回复最高（50），但需稀有的黄油，且腐烂快（3 天）。"},{"id":"melonsicle","name":"西瓜冰棍","en":"Melonsicle","priority":10,"cat":"甜点","hp":3,"hunger":12.5,"sanity":20,"spoil":3,"cook":10,"cost":3,"dlc":"巨人国","rule":"t.n[\"西瓜\"]>=1&&t.n[\"冰\"]>=1&&t.v.inedible>=1&&!t.v.meat&&!t.v.egg&&!t.v.veg","stars":2,"caution":"西瓜+冰+2树枝;保质期3天,夏季降温回san；西瓜+冰+树枝，补精神20+降温，夏季神器。"},{"id":"trailmix","name":"什锦干果","en":"Trail Mix","priority":10,"cat":"素食","hp":30,"hunger":12.5,"sanity":5,"spoil":15,"cook":10,"cost":1,"dlc":"巨人国","rule":"t.n[\"桦树果\"]>=1&&t.n[\"浆果\"]>=1&&t.v.fruit>=1&&!t.v.meat&&!t.v.veg&&!t.v.egg&&!t.v.dairy","stars":4,"caution":"需桦树果≥1且浆果≥1;烤桦树果+浆果+填充;冬天桦树落叶难获取；烤桦树果+浆果+水果，前期回血好物，保质 15 天。"},{"id":"waffles","name":"华夫饼","en":"Waffles","priority":10,"cat":"甜点","hp":60,"hunger":37.5,"sanity":5,"spoil":6,"cook":10,"cost":5,"dlc":"原版","rule":"t.n[\"黄油\"]>=1&&t.n[\"浆果\"]>=1&&t.v.egg>=1","stars":2,"caution":"需黄油+鸡蛋+浆果+树枝;黄油极稀有,造价贵；回血极高（60），但需稀有的黄油。"},{"id":"guacamole","name":"鼹梨沙拉酱","en":"Guacamole","priority":10,"cat":"肉食","hp":20,"hunger":37.5,"sanity":0,"spoil":10,"cook":10,"cost":2,"dlc":"巨人国","rule":"t.n[\"鼹鼠\"]>=1&&t.n[\"仙人掌肉\"]>=1&&!t.v.fruit","stars":3,"caution":"需鼹鼠+仙人掌肉;2树枝+鼹鼠+仙人掌肉;巨人国专属；鼹鼠+仙人掌肉，回血20；鼹鼠放仙人掌旁好抓。"},{"id":"taffy","name":"太妃糖","en":"Taffy","priority":10,"cat":"甜点","hp":-3,"hunger":25,"sanity":15,"spoil":15,"cook":40,"cost":3,"dlc":"原版","rule":"t.v.sweetener>=3&&!t.v.meat","stars":3,"caution":"3蜂蜜+1树枝;扣3血但回15精神;san神器；补精神（15）；会掉 3 点血。蜂房量产蜂蜜后实用。"},{"id":"seafoodgumbo","name":"海鲜浓汤","en":"Seafood Gumbo","priority":10,"cat":"肉食","hp":40,"hunger":37.5,"sanity":20,"spoil":10,"cook":20,"cost":2,"dlc":"海难","rule":"t.v.fish>2","stars":5,"caution":"需鱼度≥2且肉度≥0;2鱼+2肉是经典；鱼度>2.0，回血回精神都不错。"},{"id":"steamedhamsandwich","name":"蒸火腿三明治","en":"Steamed Ham Sandwich","priority":5,"cat":"肉食","hp":40,"hunger":37.5,"sanity":15,"spoil":6,"cook":40,"cost":2,"dlc":"哈姆雷特","rule":"t.n[\"蕨类\"]>=1&&t.n[\"大肉\"]>=1&&t.v.veg>=1&&!t.v.monster","stars":4,"caution":"需肉度≥1+菜度≥1+填充;哈姆雷特综合料理；大肉+蕨类+蔬菜+填充，回血40回精神15。"},{"id":"kabobs","name":"烤肉串","en":"Kabobs","priority":5,"cat":"肉食","hp":3,"hunger":37.5,"sanity":5,"spoil":15,"cook":40,"cost":2,"dlc":"原版","rule":"t.v.meat>0&&t.v.inedible===1&&t.v.monster<=1","stars":3,"caution":"需肉度≥1且树枝≥1且怪物度<1;小肉+树枝+2填充;怪物肉会做成怪物千层饼；1 肉 + 1 树枝 + 2 填充。"},{"id":"pierogi","name":"波兰饺子","en":"Pierogi","priority":5,"cat":"肉食","hp":40,"hunger":37.5,"sanity":5,"spoil":20,"cook":20,"cost":2,"dlc":"原版","rule":"t.v.egg===1&&t.v.meat>.25&&t.v.veg>.25&&!t.n[\"树枝\"]","stars":4,"caution":"需蛋度≥1+肉度≥1+菜度≥1;不能放树枝;高脚鸟蛋会优先做成培根煎蛋；公认回血性价比王：40 血，材料易得，保质期长。"},{"id":"honeyham","name":"蜜汁火腿","en":"Honey Ham","priority":2,"cat":"肉食","hp":30,"hunger":75,"sanity":5,"spoil":15,"cook":40,"cost":3,"dlc":"原版","rule":"t.n[\"蜂蜜\"]>=1&&t.v.meat>1.5&&!t.v.inedible","stars":4,"caution":"需肉度≥2且蜂蜜≥1;不能全用怪物肉;2蜂蜜+2肉会做成蜂蜜甜块；回血回饱均衡；蜂房建好后可量产。"},{"id":"honeynuggets","name":"蜜汁卤肉","en":"Honey Nuggets","priority":2,"cat":"肉食","hp":20,"hunger":37.5,"sanity":5,"spoil":15,"cook":40,"cost":3,"dlc":"原版","rule":"t.n[\"蜂蜜\"]>=1&&t.v.meat>0&&t.v.meat<=1.5&&!t.v.inedible","stars":3,"caution":"需肉度≥1且蜂蜜≥1;小肉+蜂蜜+2填充;不能放树枝；蜂蜜+少量肉+填充，回血回饱适中。"},{"id":"dragonpie","name":"火龙果派","en":"Dragonpie","priority":1,"cat":"素食","hp":40,"hunger":75,"sanity":5,"spoil":15,"cook":40,"cost":4,"dlc":"原版","rule":"t.n[\"火龙果\"]>=1&&!t.v.meat","stars":3,"caution":"火龙果+3填充(树枝/浆果/冰均可);不能放肉(否则出肉丸)；回血回饱双高，但火龙果稀贵（需农场培育），性价比打折。"},{"id":"stuffedeggplant","name":"酿茄子","en":"Stuffed Eggplant","priority":1,"cat":"素食","hp":3,"hunger":37.5,"sanity":5,"spoil":15,"cook":40,"cost":2,"dlc":"原版","rule":"t.n[\"茄子\"]>=1&&t.v.veg>=.5","stars":3,"caution":"需茄子≥1且菜度≥1;茄子+蔬菜+2填充;不能放肉；茄子+其他蔬菜+填充，回饱好。"},{"id":"froggle","name":"蛙腿三明治","en":"Froggle Bunwich","priority":1,"cat":"肉食","hp":20,"hunger":37.5,"sanity":5,"spoil":15,"cook":40,"cost":2,"dlc":"原版","rule":"t.n[\"蛙腿\"]>=1&&t.v.veg>=.5","stars":3,"caution":"需蛙腿≥1且菜度≥1;蛙腿+蔬菜+2填充；材料易得，属性不错，前期实用。"},{"id":"buttermuffin","name":"黄油松饼","en":"Butter Muffin","priority":1,"cat":"甜点","hp":20,"hunger":37.5,"sanity":5,"spoil":15,"cook":40,"cost":2,"dlc":"原版","rule":"t.n[\"蝴蝶翅膀\"]>=1&&t.v.veg>=.5&&!t.v.meat","stars":3,"caution":"需蝴蝶翅膀≥1+菜度≥1;蝴蝶翅膀+蔬菜+2填充；打蝴蝶即可得材料，前期实惠回血。"},{"id":"hardshelltacos","name":"硬壳玉米饼","en":"Hard Shell Tacos","priority":1,"cat":"素食","hp":20,"hunger":37.5,"sanity":5,"spoil":15,"cook":20,"cost":3,"dlc":"哈姆雷特","rule":"t.n[\"甲虫壳\"]>=2&&t.v.veg>=.5","stars":3,"caution":"需甲虫壳≥1+菜度≥1;甲虫壳+蔬菜+2填充；甲虫壳×2+蔬菜，回血回饱适中。"},{"id":"meatednettles","name":"肉荨麻卷","en":"Meated Nettles","priority":1,"cat":"肉食","hp":20,"hunger":37.5,"sanity":5,"spoil":8,"cook":20,"cost":2,"dlc":"哈姆雷特","rule":"t.n[\"荨麻\"]>=2&&t.v.meat>=1&&!t.v.inedible","stars":3,"caution":"需荨麻度≥1+肉度≥1;抗花粉症+回饱；荨麻×2+肉，免疫花粉症；比荨麻卷多个肉。"},{"id":"gummycake","name":"软糖蛋糕","en":"Gummy Cake","priority":1,"cat":"甜点","hp":-3,"hunger":150,"sanity":-5,"spoil":20,"cook":40,"cost":3,"dlc":"哈姆雷特","rule":"t.n[\"糖蛞蝓\"]>=1&&t.v.sweetener>=1&&!t.v.meat","stars":4,"caution":"需糖蛞蝓≥1+甜味剂;饱食150但扣血扣san;填充不能放肉；饱食直接顶满（150），但掉血掉精神；材料需打糖蛞蝓。"},{"id":"meatystew","name":"炖肉","en":"Meaty Stew","priority":0,"cat":"肉食","hp":12,"hunger":150,"sanity":5,"spoil":10,"cook":15,"cost":3,"dlc":"原版","rule":"t.v.meat>=3&&!t.v.inedible","stars":5,"caution":"怪物肉最多1个(否则扣血);不能放树枝/蜂蜜;需3份肉度；饱食直接顶满。需 3 份肉（大肉），材料较费。"},{"id":"ratatouille","name":"蔬菜杂烩","en":"Ratatouille","priority":0,"cat":"素食","hp":3,"hunger":25,"sanity":5,"spoil":15,"cook":20,"cost":1,"dlc":"原版","rule":"t.v.veg>=.5&&!t.v.meat&&!t.v.inedible","stars":4,"caution":"需菜度≥2.5且无肉;4蔬菜或1萝卜+3浆果;不能放肉/蛋；简单素食，用掉多余蔬菜。"},{"id":"jam","name":"果酱","en":"Fist Full of Jam","priority":0,"cat":"甜点","hp":3,"hunger":37.5,"sanity":5,"spoil":15,"cook":10,"cost":1,"dlc":"原版","rule":"t.v.fruit>=.5&&!t.v.meat&&!t.v.veg&&!t.v.inedible","stars":4,"caution":"需水果度≥1且无肉;4浆果或3水果+1填充;饱食低不推荐；简单甜点，浆果多时可做。"},{"id":"fruitmedley","name":"水果杂烩","en":"Fruit Medley","priority":0,"cat":"甜点","hp":20,"hunger":25,"sanity":5,"spoil":6,"cook":10,"cost":1,"dlc":"原版","rule":"t.v.fruit>=3&&!t.v.meat&&!t.v.veg","stars":5,"caution":"需水果度≥3;3香蕉+1树枝是经典配方;保质期短；全水果大拼盘，回血20+降温；饱食不如果酱。"},{"id":"nettlerolls","name":"荨麻卷","en":"Nettle Rolls","priority":0,"cat":"素食","hp":20,"hunger":25,"sanity":5,"spoil":6,"cook":10,"cost":2,"dlc":"哈姆雷特","rule":"t.n[\"荨麻\"]>=3","stars":3,"caution":"需荨麻度≥3;3荨麻+填充;抗花粉症必备；荨麻×3+填充，免疫花粉症720秒。"},{"id":"meatballs","name":"肉丸","en":"Meatballs","priority":-1,"cat":"肉食","hp":3,"hunger":62.5,"sanity":5,"spoil":10,"cook":15,"cost":2,"dlc":"原版","rule":"t.v.meat>0&&!t.v.inedible","stars":4,"caution":"不能放树枝(不可食);肉类任意,填充用浆果/冰/胡萝卜/蘑菇均可；公认性价比之王：怪物肉+3冰/浆果，把毒肉变废为宝。"},{"id":"wetgoop","name":"湿腻食品","en":"Wet Goop","priority":-10,"cat":"特殊","hp":0,"hunger":0,"sanity":0,"spoil":6,"cook":10,"cost":0,"dlc":"原版","rule":"()=>true","stars":1,"caution":"4树枝 或 4不可食;失败料理,无任何用途；烹饪失败产物，无收益。"}],"rawFoods":[{"name":"大肉","en":"Meat","cat":"肉食","raw":{"h":10,"p":-10,"s":-10},"ck":{"h":25,"p":-3,"s":-10},"caution":"最常用肉度来源"},{"name":"怪物肉","en":"Monster_Meat","cat":"肉食","raw":{"h":18,"p":-20,"s":-20},"ck":{"h":12.5,"p":-8,"s":-10},"caution":"必烤再吃,生吃扣血扣san严重"},{"name":"小肉","en":"Morsel","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"生吃几乎无回复,烤熟后不错"},{"name":"鸡腿","en":"Drumstick","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"生吃无回复,烤鸡腿可做火鸡诱饵"},{"name":"蛙腿","en":"Frog_Legs","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"生吃无回复"},{"name":"鱼","en":"Fish","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"易腐,烤熟延长保质"},{"name":"鳗鱼","en":"Eel","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":8,"s":0},"caution":"烤鳗鱼回8血,回血小食"},{"name":"蝙蝠翅膀","en":"Batilisk_Wing","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"可烤可晒肉干"},{"name":"叶肉","en":"Leafy_Meat","cat":"肉食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"植物产肉度,素食者友好"},{"name":"胡萝卜","en":"Carrot","cat":"素食","raw":{"h":12.5,"p":0,"s":0},"ck":{"h":12.5,"p":3,"s":0},"caution":"烤胡萝卜回3血"},{"name":"玉米","en":"Corn","cat":"素食","raw":{"h":25,"p":0,"s":0},"ck":{"h":25,"p":3,"s":0},"caution":"饱食高,烤熟回3血"},{"name":"茄子","en":"Eggplant","cat":"素食","raw":{"h":25,"p":0,"s":0},"ck":{"h":25,"p":8,"s":0},"caution":"烤茄子回8血,回血蔬菜"},{"name":"南瓜","en":"Pumpkin","cat":"素食","raw":{"h":37.5,"p":0,"s":0},"ck":{"h":37.5,"p":3,"s":0},"caution":"饱食最高的蔬菜之一"},{"name":"芦笋","en":"Asparagus","cat":"素食","raw":{"h":12.5,"p":0,"s":0},"ck":{"h":12.5,"p":3,"s":0},"caution":"巨人国蔬菜"},{"name":"红薯","en":"Sweet_Potato","cat":"素食","raw":{"h":12.5,"p":0,"s":0},"ck":{"h":12.5,"p":3,"s":0},"caution":"海难版蔬菜"},{"name":"红蘑菇","en":"Red_Cap","cat":"素食","raw":{"h":0,"p":-20,"s":0},"ck":{"h":0,"p":10,"s":0},"caution":"生吃扣20血!烤熟回10血"},{"name":"蓝蘑菇","en":"Blue_Cap","cat":"素食","raw":{"h":0,"p":0,"s":-20},"ck":{"h":0,"p":0,"s":10},"caution":"生吃扣20san,烤熟回10san"},{"name":"绿蘑菇","en":"Green_Cap","cat":"素食","raw":{"h":0,"p":-10,"s":0},"ck":{"h":0,"p":15,"s":0},"caution":"烤熟回15血,最佳回血蘑菇"},{"name":"仙人掌肉","en":"Cactus_Flesh","cat":"素食","raw":{"h":12.5,"p":0,"s":-5},"ck":{"h":12.5,"p":0,"s":5},"caution":"烤熟回5san"},{"name":"海带","en":"Kelp_Files","cat":"素食","raw":{"h":0,"p":0,"s":0},"ck":{"h":0,"p":0,"s":0},"caution":"度值填充用,烤海带可做鱼饵"},{"name":"浆果","en":"Berries","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"最常见填充,烤熟饱食略增"},{"name":"火龙果","en":"Dragonfruit","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"做火龙果派价值最高"},{"name":"石榴","en":"Pomegranate","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"note":""},{"name":"香蕉","en":"Banana","cat":"素食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"海难/洞穴水果"},{"name":"榴莲","en":"Durian","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"怪物度0.5,有怪味"},{"name":"西瓜","en":"Watermelon","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"夏季水果"},{"name":"椰子","en":"Coconut","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"海难版水果"},{"name":"桦树果","en":"Birchnut","cat":"素食","raw":{"h":0,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"烤熟可吃,落叶季掉落"},{"name":"鸡蛋","en":"Egg","cat":"肉食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"鸟笼产蛋,常用填充"},{"name":"高脚鸟蛋","en":"Tallbird_Egg","cat":"肉食","raw":{"h":25,"p":0,"s":0},"ck":{"h":37.5,"p":0,"s":0},"caution":"高饱食蛋,会孵出小高鸟"},{"name":"蝴蝶翅膀","en":"Butterfly_Wings","cat":"素食","raw":{"h":9.4,"p":8,"s":0},"ck":{"h":12.5,"p":8,"s":0},"caution":"生吃就回8血,急救小食"},{"name":"曼德拉草","en":"Mandrake","cat":"特殊","raw":{"h":0,"p":0,"s":0},"ck":{"h":100,"p":100,"s":100},"caution":"烤熟吃满血满饱满san!但极稀有,建议留做排笛"},{"name":"仙人掌花","en":"Cactus_Flower","cat":"素食","raw":{"h":12.5,"p":0,"s":5},"ck":{"h":12.5,"p":0,"s":10},"caution":"烤熟回10san"},{"name":"蜂蜜","en":"Honey","cat":"甜点","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"蜂巢产,甜味剂来源"},{"name":"黄油","en":"Butter","cat":"甜点","raw":{"h":12.5,"p":0,"s":0},"ck":{"h":37.5,"p":0,"s":0},"caution":"极稀有,烤黄油饱食高"},{"name":"咖啡豆","en":"Coffee_Beans","cat":"素食","raw":{"h":9.4,"p":0,"s":0},"ck":{"h":12.5,"p":0,"s":0},"caution":"烤后变烤咖啡豆做咖啡"},{"name":"冰","en":"Ice","cat":"素食","raw":{"h":0,"p":0,"s":0},"ck":{"h":0,"p":0,"s":0},"caution":"填充用,不可吃但保鲜好"}]}</script>
+<script id="app-tests" type="application/json">{
+  "engine": "judgePot",
+  "description": "饥荒单机版烹饪锅精确判定——20组验收用例",
+  "total": 20,
+  "cases": [
+    {
+      "materials": [
+        "大肉",
+        "大肉",
+        "大肉",
+        "浆果"
+      ],
+      "expected": "meatystew",
+      "expected_name": "炖肉",
+      "label": "大肉x3+浆果"
+    },
+    {
+      "materials": [
+        "蜂蜜",
+        "大肉",
+        "大肉",
+        "浆果"
+      ],
+      "expected": "honeyham",
+      "expected_name": "蜜汁火腿",
+      "label": "蜂蜜+大肉x2+浆果"
+    },
+    {
+      "materials": [
+        "怪物肉",
+        "怪物肉",
+        "高脚鸟蛋",
+        "树枝"
+      ],
+      "expected": "bacon",
+      "expected_name": "培根煎蛋",
+      "label": "怪物肉x2+高脚鸟蛋+树枝"
+    },
+    {
+      "materials": [
+        "鸡蛋",
+        "怪物肉",
+        "胡萝卜",
+        "冰"
+      ],
+      "expected": "pierogi",
+      "expected_name": "波兰饺子",
+      "label": "鸡蛋+怪物肉+胡萝卜+冰"
+    },
+    {
+      "materials": [
+        "怪物肉",
+        "冰",
+        "冰",
+        "冰"
+      ],
+      "expected": "meatballs",
+      "expected_name": "肉丸",
+      "label": "怪物肉+冰x3"
+    },
+    {
+      "materials": [
+        "鱼",
+        "树枝",
+        "浆果",
+        "浆果"
+      ],
+      "expected": "fishsticks",
+      "expected_name": "鱼排",
+      "label": "鱼+树枝+浆果x2"
+    },
+    {
+      "materials": [
+        "鸡蛋",
+        "鸡蛋",
+        "大肉",
+        "小肉"
+      ],
+      "expected": "bacon",
+      "expected_name": "培根煎蛋",
+      "label": "鸡蛋x2+大肉+小肉"
+    },
+    {
+      "materials": [
+        "怪物肉",
+        "怪物肉",
+        "浆果",
+        "冰"
+      ],
+      "expected": "monsterlasagna",
+      "expected_name": "怪物千层饼",
+      "label": "怪物肉x2+浆果+冰"
+    },
+    {
+      "materials": [
+        "桦树果",
+        "浆果",
+        "浆果",
+        "浆果"
+      ],
+      "expected": "trailmix",
+      "expected_name": "什锦干果",
+      "label": "桦树果+浆果x3"
+    },
+    {
+      "materials": [
+        "树枝",
+        "树枝",
+        "树枝",
+        "树枝"
+      ],
+      "expected": "wetgoop",
+      "expected_name": "湿腻食品",
+      "label": "树枝x4"
+    },
+    {
+      "materials": [
+        "烤咖啡豆",
+        "烤咖啡豆",
+        "烤咖啡豆",
+        "蜂蜜"
+      ],
+      "expected": "coffee",
+      "expected_name": "咖啡",
+      "label": "烤咖啡豆x3+蜂蜜"
+    },
+    {
+      "materials": [
+        "帽贝",
+        "帽贝",
+        "帽贝",
+        "冰"
+      ],
+      "expected": "bisque",
+      "expected_name": "帽贝浓汤",
+      "label": "帽贝x3+冰"
+    },
+    {
+      "materials": [
+        "贻贝",
+        "贻贝",
+        "胡萝卜",
+        "玉米"
+      ],
+      "expected": "musselbouillabaisse",
+      "expected_name": "贻贝炖汤",
+      "label": "贻贝x2+胡萝卜+玉米"
+    },
+    {
+      "materials": [
+        "红薯",
+        "红薯",
+        "鸡蛋",
+        "鸡蛋"
+      ],
+      "expected": "sweetpotatosouffle",
+      "expected_name": "红薯舒芙蕾",
+      "label": "红薯x2+鸡蛋x2"
+    },
+    {
+      "materials": [
+        "橙色皮克鼠",
+        "橙色皮克鼠",
+        "蜂蜜",
+        "冰"
+      ],
+      "expected": "icedtea",
+      "expected_name": "凉茶",
+      "label": "橙皮鼠x2+蜂蜜+冰"
+    },
+    {
+      "materials": [
+        "鳗鱼",
+        "苔藓",
+        "浆果",
+        "浆果"
+      ],
+      "expected": "unagi",
+      "expected_name": "鳗鱼饭",
+      "label": "鳗鱼+苔藓+浆果x2"
+    },
+    {
+      "materials": [
+        "蛇骨",
+        "蛇骨",
+        "怪物肉",
+        "大肉"
+      ],
+      "expected": "snakebonesoup",
+      "expected_name": "蛇骨汤",
+      "label": "蛇骨x2+怪物肉+大肉"
+    },
+    {
+      "materials": [
+        "龙虾",
+        "冰",
+        "浆果",
+        "浆果"
+      ],
+      "expected": "lobsterbisque",
+      "expected_name": "龙虾汤",
+      "label": "龙虾+冰+浆果x2"
+    },
+    {
+      "materials": [
+        "怪物肉",
+        "怪物肉",
+        "怪物肉",
+        "树枝"
+      ],
+      "expected": "wetgoop",
+      "expected_name": "湿腻食品",
+      "label": "怪物肉x3+树枝"
+    },
+    {
+      "materials": [
+        "西瓜",
+        "冰",
+        "树枝",
+        "浆果"
+      ],
+      "expected": "melonsicle",
+      "expected_name": "西瓜冰棍",
+      "label": "西瓜+冰+树枝+浆果"
+    }
+  ]
+}</script>
+<script id="img-urls" type="application/json">{"Mandrake_Soup":"https://static.wikia.nocookie.net/dont-starve-game/images/e/e2/Mandrake_Soup.png/revision/latest","Fish_Tacos":"https://static.wikia.nocookie.net/dont-starve-game/images/a/af/Fish_Tacos.png/revision/latest","Bacon_and_Eggs":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a6/Bacon_and_Eggs.png/revision/latest","Fishsticks":"https://static.wikia.nocookie.net/dont-starve-game/images/4/4d/Fishsticks.png/revision/latest","Turkey_Dinner":"https://static.wikia.nocookie.net/dont-starve-game/images/e/e6/Turkey_Dinner.png/revision/latest","Monster_Lasagna":"https://static.wikia.nocookie.net/dont-starve-game/images/f/f9/Monster_Lasagna.png/revision/latest","Pumpkin_Cookies":"https://static.wikia.nocookie.net/dont-starve-game/images/c/c5/Pumpkin_Cookies.png/revision/latest","Powdercake":"https://static.wikia.nocookie.net/dont-starve-game/images/1/1f/Powdercake.png/revision/latest","Unagi":"https://static.wikia.nocookie.net/dont-starve-game/images/3/36/Unagi.png/revision/latest","Banana_Pop":"https://static.wikia.nocookie.net/dont-starve-game/images/f/fc/Banana_Pop.png/revision/latest","Bisque":"https://static.wikia.nocookie.net/dont-starve-game/images/9/97/Bisque.png/revision/latest","California_Roll":"https://static.wikia.nocookie.net/dont-starve-game/images/d/d4/California_Roll.png/revision/latest","Ceviche":"https://static.wikia.nocookie.net/dont-starve-game/images/4/43/Ceviche.png/revision/latest","Jelly-O_Pop":"https://static.wikia.nocookie.net/dont-starve-game/images/9/9b/Jelly-O_Pop.png/revision/latest","Shark_Fin_Soup":"https://static.wikia.nocookie.net/dont-starve-game/images/3/37/Shark_Fin_Soup.png/revision/latest","Surf_'n'_Turf":"https://static.wikia.nocookie.net/dont-starve-game/images/3/3a/Surf_%27n%27_Turf.png/revision/latest","Coffee":"https://static.wikia.nocookie.net/dont-starve-game/images/e/e9/Coffee.png/revision/latest","Fresh_Fruit_Crepes":"https://static.wikia.nocookie.net/dont-starve-game/images/1/14/Fresh_Fruit_Crepes.png/revision/latest","Sweet_Potato_Souffle":"https://static.wikia.nocookie.net/dont-starve-game/images/d/dd/Sweet_Potato_Souffle.png/revision/latest","Caviar":"https://static.wikia.nocookie.net/dont-starve-game/images/8/89/Caviar.png/revision/latest","Tropical_Bouillabaisse":"https://static.wikia.nocookie.net/dont-starve-game/images/0/08/Tropical_Bouillabaisse.png/revision/latest","Asparagus_Soup":"https://static.wikia.nocookie.net/dont-starve-game/images/8/83/Asparagus_Soup.png/revision/latest","Tea":"https://static.wikia.nocookie.net/dont-starve-game/images/5/59/Tea.png/revision/latest","Spicy_Vegetable_Stinger":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8c/Spicy_Vegetable_Stinger.png/revision/latest","Iced_Tea":"https://static.wikia.nocookie.net/dont-starve-game/images/4/4f/Iced_Tea.png/revision/latest","Snake_Bone_Soup":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a1/Snake_Bone_Soup.png/revision/latest","Feijoada":"https://static.wikia.nocookie.net/dont-starve-game/images/d/d9/Feijoada.png/revision/latest","Lobster_Dinner":"https://static.wikia.nocookie.net/dont-starve-game/images/3/32/Wobster_Dinner.png/revision/latest","Lobster_Bisque":"https://static.wikia.nocookie.net/dont-starve-game/images/b/b3/Wobster_Bisque.png/revision/latest","Wet_Goop":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a8/Wet_Goop.png/revision/latest","Kabobs":"https://static.wikia.nocookie.net/dont-starve-game/images/4/46/Kabobs.png/revision/latest","Ratatouille":"https://static.wikia.nocookie.net/dont-starve-game/images/b/b0/Ratatouille.png/revision/latest","Pierogi":"https://static.wikia.nocookie.net/dont-starve-game/images/9/91/Pierogi.png/revision/latest","Meaty_Stew":"https://static.wikia.nocookie.net/dont-starve-game/images/d/d4/Meaty_Stew.png/revision/latest","Dragonpie":"https://static.wikia.nocookie.net/dont-starve-game/images/2/2b/Dragonpie.png/revision/latest","Waffles":"https://static.wikia.nocookie.net/dont-starve-game/images/e/e8/Waffles.png/revision/latest","Froggle_Bunwich":"https://static.wikia.nocookie.net/dont-starve-game/images/2/2b/Froggle_Bunwich.png/revision/latest","Fruit_Medley":"https://static.wikia.nocookie.net/dont-starve-game/images/3/34/Fruit_Medley.png/revision/latest","Honey_Ham":"https://static.wikia.nocookie.net/dont-starve-game/images/6/6b/Honey_Ham.png/revision/latest","Butter_Muffin":"https://static.wikia.nocookie.net/dont-starve-game/images/9/92/Butter_Muffin.png/revision/latest","Stuffed_Eggplant":"https://static.wikia.nocookie.net/dont-starve-game/images/7/72/Stuffed_Eggplant.png/revision/latest","Honey_Nuggets":"https://static.wikia.nocookie.net/dont-starve-game/images/1/1b/Honey_Nuggets.png/revision/latest","Meatballs":"https://static.wikia.nocookie.net/dont-starve-game/images/b/bf/Meatballs.png/revision/latest","Fist_Full_of_Jam":"https://static.wikia.nocookie.net/dont-starve-game/images/2/27/Fist_Full_of_Jam.png/revision/latest","Taffy":"https://static.wikia.nocookie.net/dont-starve-game/images/d/dc/Taffy.png/revision/latest","Flower_Salad":"https://static.wikia.nocookie.net/dont-starve-game/images/d/d8/Flower_Salad.png/revision/latest","Melonsicle":"https://static.wikia.nocookie.net/dont-starve-game/images/0/0f/Melonsicle.png/revision/latest","Guacamole":"https://static.wikia.nocookie.net/dont-starve-game/images/9/91/Guacamole.png/revision/latest","Trail_Mix":"https://static.wikia.nocookie.net/dont-starve-game/images/f/f8/Trail_Mix.png/revision/latest","Ice_Cream":"https://static.wikia.nocookie.net/dont-starve-game/images/5/5d/Ice_Cream.png/revision/latest","Spicy_Chili":"https://static.wikia.nocookie.net/dont-starve-game/images/7/76/Spicy_Chili.png/revision/latest","Seafood_Gumbo":"https://static.wikia.nocookie.net/dont-starve-game/images/f/fc/Seafood_Gumbo.png/revision/latest","Nettle_Rolls":"https://static.wikia.nocookie.net/dont-starve-game/images/4/47/Nettle_Rolls.png/revision/latest","Steamed_Ham_Sandwich":"https://static.wikia.nocookie.net/dont-starve-game/images/8/82/Steamed_Ham_Sandwich.png/revision/latest","Hard_Shell_Tacos":"https://static.wikia.nocookie.net/dont-starve-game/images/1/1f/Hard_Shell_Tacos.png/revision/latest","Gummy_Cake":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a8/Gummy_Cake.png/revision/latest","Meated_Nettles":"https://static.wikia.nocookie.net/dont-starve-game/images/9/94/Meated_Nettles.png/revision/latest","Drumstick":"https://static.wikia.nocookie.net/dont-starve-game/images/d/dd/Drumstick.png/revision/latest","Fish":"https://static.wikia.nocookie.net/dont-starve-game/images/f/fb/Fish.png/revision/latest","Pumpkin":"https://static.wikia.nocookie.net/dont-starve-game/images/6/64/Pumpkin.png/revision/latest","Corn":"https://static.wikia.nocookie.net/dont-starve-game/images/f/f8/Corn.png/revision/latest","Morsel":"https://static.wikia.nocookie.net/dont-starve-game/images/2/2e/Morsel.png/revision/latest","Meat":"https://static.wikia.nocookie.net/dont-starve-game/images/5/58/Meat.png/revision/latest","Eggplant":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8f/Eggplant.png/revision/latest","Frog_Legs":"https://static.wikia.nocookie.net/dont-starve-game/images/5/52/Frog_Legs.png/revision/latest","Monster_Meat":"https://static.wikia.nocookie.net/dont-starve-game/images/8/81/Monster_Meat.png/revision/latest","Red_Cap":"https://static.wikia.nocookie.net/dont-starve-game/images/0/0f/Red_Cap.png/revision/latest","Blue_Cap":"https://static.wikia.nocookie.net/dont-starve-game/images/3/37/Blue_Cap.png/revision/latest","Green_Cap":"https://static.wikia.nocookie.net/dont-starve-game/images/8/84/Green_Cap.png/revision/latest","Cactus_Flesh":"https://static.wikia.nocookie.net/dont-starve-game/images/0/0e/Cactus_Flesh.png/revision/latest","Batilisk_Wing":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a8/Batilisk_Wing.png/revision/latest","Carrot":"https://static.wikia.nocookie.net/dont-starve-game/images/c/c3/Carrot.png/revision/latest","Leafy_Meat":"https://static.wikia.nocookie.net/dont-starve-game/images/e/e9/Leafy_Meat.png/revision/latest","Eel":"https://static.wikia.nocookie.net/dont-starve-game/images/9/91/Eel.png/revision/latest","Jellyfish":"https://static.wikia.nocookie.net/dont-starve-game/images/2/22/Jellyfish.png/revision/latest","Mussel":"https://static.wikia.nocookie.net/dont-starve-game/images/a/aa/Mussel.png/revision/latest","Wobster":"https://static.wikia.nocookie.net/dont-starve-game/images/b/b8/Wobster.png/revision/latest","Shark_Fin":"https://static.wikia.nocookie.net/dont-starve-game/images/9/9b/Shark_Fin.png/revision/latest","Limpet":"https://static.wikia.nocookie.net/dont-starve-game/images/0/0b/Limpet.png/revision/latest","Roe":"https://static.wikia.nocookie.net/dont-starve-game/images/5/56/Roe.png/revision/latest","Purple_Grouper":"https://static.wikia.nocookie.net/dont-starve-game/images/d/db/Purple_Grouper.png/revision/latest","Pierrot_Fish":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8c/Pierrot_Fish.png/revision/latest","Asparagus":"https://static.wikia.nocookie.net/dont-starve-game/images/4/45/Asparagus.png/revision/latest","Twigs":"https://static.wikia.nocookie.net/dont-starve-game/images/7/76/Twigs.png/revision/latest","Honey":"https://static.wikia.nocookie.net/dont-starve-game/images/c/c6/Honey.png/revision/latest","Berries":"https://static.wikia.nocookie.net/dont-starve-game/images/2/24/Berries.png/revision/latest","Tallbird_Egg":"https://static.wikia.nocookie.net/dont-starve-game/images/5/53/Tallbird_Egg.png/revision/latest","Pomegranate":"https://static.wikia.nocookie.net/dont-starve-game/images/1/1b/Pomegranate.png/revision/latest","Butter":"https://static.wikia.nocookie.net/dont-starve-game/images/f/f1/Butter.png/revision/latest","Butterfly_Wings":"https://static.wikia.nocookie.net/dont-starve-game/images/1/19/Butterfly_Wings.png/revision/latest","Durian":"https://static.wikia.nocookie.net/dont-starve-game/images/3/39/Durian.png/revision/latest","Mandrake":"https://static.wikia.nocookie.net/dont-starve-game/images/c/c3/Mandrake.png/revision/latest","Egg":"https://static.wikia.nocookie.net/dont-starve-game/images/2/26/Egg.png/revision/latest","Cactus_Flower":"https://static.wikia.nocookie.net/dont-starve-game/images/a/ab/Cactus_Flower.png/revision/latest","Foliage":"https://static.wikia.nocookie.net/dont-starve-game/images/2/21/Foliage.png/revision/latest","Ice":"https://static.wikia.nocookie.net/dont-starve-game/images/7/77/Ice.png/revision/latest","Watermelon":"https://static.wikia.nocookie.net/dont-starve-game/images/0/06/Watermelon.png/revision/latest","Birchnut":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a7/Birchnut.png/revision/latest","Coconut":"https://static.wikia.nocookie.net/dont-starve-game/images/2/2f/Coconut.png/revision/latest","Banana":"https://static.wikia.nocookie.net/dont-starve-game/images/6/69/Banana.png/revision/latest","Sweet_Potato":"https://static.wikia.nocookie.net/dont-starve-game/images/2/26/Sweet_Potato.png/revision/latest","Coffee_Beans":"https://static.wikia.nocookie.net/dont-starve-game/images/7/7b/Coffee_Beans.png/revision/latest","Gummy_Slug":"https://static.wikia.nocookie.net/dont-starve-game/images/6/69/Gummy_Slug.png/revision/latest","Weevole_Carapace":"https://static.wikia.nocookie.net/dont-starve-game/images/9/91/Weevole_Carapace.png/revision/latest","Nettle":"https://static.wikia.nocookie.net/dont-starve-game/images/4/40/Nettle.png/revision/latest","Popperfish":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8e/Popperfish.png/revision/latest","Dragonfruit":"https://static.wikia.nocookie.net/dont-starve-game/images/2/29/Dragon_Fruit.png/revision/latest","Kelp_Files":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8d/Kelp_Frond.png/revision/latest","Moss":"https://static.wikia.nocookie.net/dont-starve-game/images/8/8a/Lichen.png/revision/latest","Mole":"https://static.wikia.nocookie.net/dont-starve-game/images/2/2a/Moleworm.png/revision/latest","Mussel_Bouillabaisse":"https://static.wikia.nocookie.net/dont-starve-game/images/5/57/Mussel_Bouillabaise.png/revision/latest","Neon_Quagga":"https://static.wikia.nocookie.net/dont-starve-game/images/f/ff/Neon_Quattro.png/revision/latest","Snake_Bones":"https://static.wikia.nocookie.net/dont-starve-game/images/0/09/Snake_Bone.png/revision/latest","Parsnip":"https://static.wikia.nocookie.net/dont-starve-game/images/a/a5/Parsnip.png","Roasted_Coffee_Beans":"https://static.wikia.nocookie.net/dont-starve-game/images/c/c0/Roasted_Coffee_Beans.png"}</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('app-data').textContent);
+const TESTS = JSON.parse(document.getElementById('app-tests').textContent);
+const { materials, scarcity, recipes } = DATA;
+const MAT_SCAR = scarcity;
+
+/* ====== 判定引擎(逐字转译 rule) ====== */
+const VKEYS = ['meat','veg','fruit','egg','fish','monster','sweetener','inedible','frozen','dairy','bug','deco'];
+const VLABEL = {meat:'肉',veg:'菜',fruit:'果',egg:'蛋',fish:'鱼',monster:'怪',sweetener:'甜',inedible:'不可食',frozen:'冰',dairy:'乳',bug:'虫',deco:'饰'};
+const VCOLOR = {meat:'#c75a4a',veg:'#7fb069',fruit:'#d96c6c',egg:'#e8c84a',fish:'#5aa6d8',monster:'#9b6bb0',sweetener:'#e8c84a',inedible:'#8a7a66',frozen:'#8ec5e8',dairy:'#f0e6c8',bug:'#9bb86b',deco:'#e88ad0'};
+const CAT_EMOJI = {'肉食':'🍖','素食':'🥬','甜点':'🍰','特殊':'✨'};
+
+function buildT(mats){
+  const v = {}; VKEYS.forEach(k=>v[k]=0);
+  const n = {};
+  for(const m of mats){
+    n[m] = (n[m]||0)+1;
+    const d = materials[m] || {};
+    for(const k in d) v[k] = (v[k]||0) + d[k];
+  }
+  return { v, n, mats: mats.slice() };
+}
+const SORTED = recipes.map((r,i)=>({r,i})).sort((a,b)=> b.r.priority - a.r.priority || a.i - b.i).map(x=>x.r);
+const RULE_CACHE = new Map();
+function getRuleFn(rule){
+  if(RULE_CACHE.has(rule)) return RULE_CACHE.get(rule);
+  let fn;
+  // rule 已是表达式(如 t.v.meat>0&&!t.v.inedible),直接求值,不要 (t) 调用
+  try { fn = new Function('t','return ('+rule+')'); }
+  catch(e){ fn = ()=>false; }
+  RULE_CACHE.set(rule, fn);
+  return fn;
+}
+function judgePot(mats){
+  const t = buildT(mats);
+  for(const r of SORTED){
+    const fn = getRuleFn(r.rule);
+    try{ if(fn(t)) return r.id; }catch(e){}
+  }
+  return 'wetgoop';
+}
+function recipeById(id){ return recipes.find(r=>r.id===id); }
+
+/* ====== 性价比评分 ====== */
+const COST_MULT = {0:1,1:1,2:1.5,3:4,4:10,5:25,6:60};
+function recipeScore(r){
+  const dlcPen = (r.dlc==='海难'||r.dlc==='哈姆雷特') ? 1 : 0;
+  const spoilPen = r.spoil<=6 ? 0.65 : 1;
+  const denom = COST_MULT[Math.min(r.cost + dlcPen, 6)];
+  return (r.hunger + r.hp*1.5 + r.sanity*1.5) / denom * spoilPen;
+}
+
+/* ====== 从 rule 解析材料需求(信息来自权威 rule,非额外功能) ====== */
+function extractReq(rule){
+  const mats = [];
+  // t.n["名称"] >= N  或  t.n["名称"]>N  或  t.n["名称"] (存在)
+  const reN = /t\.n\["([^"]+)"\]\s*(>=|>|<=|<|===|==)?\s*(\d*\.?\d+)?/g;
+  let m;
+  while((m = reN.exec(rule))){
+    const name = m[1], op = m[2], num = m[3];
+    if(op && num){
+      mats.push({name, text: name + op + num});
+    } else if(op){
+      mats.push({name, text: name + op});
+    } else {
+      mats.push({name, text: name + '≥1'});
+    }
+  }
+  // 度值条件 t.v.xxx >= N / > N / === N
+  const degs = [];
+  const reV = /t\.v\.(\w+)\s*(>=|>|<=|<|===|==|!=)\s*(\d*\.?\d+)/g;
+  while((m = reV.exec(rule))){
+    const k = m[1], op = m[2], num = parseFloat(m[3]);
+    if(k && VKEYS.includes(k)) degs.push({k, op, num, label: VLABEL[k]});
+  }
+  // 禁止条件 !t.v.xxx 或 !t.n["x"]
+  const bans = [];
+  const reBanV = /!\s*t\.v\.(\w+)/g;
+  while((m = reBanV.exec(rule))) bans.push(VLABEL[m[1]]||m[1]);
+  const reBanN = /!\s*t\.n\["([^"]+)"\]/g;
+  while((m = reBanN.exec(rule))) bans.push(m[1]);
+  return { mats, degs, bans };
+}
+
+/* ====== UI ====== */
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function star(n){ return '★'.repeat(n)+'☆'.repeat(6-n); }
+function degHtml(name){
+  const d = materials[name]||{};
+  const keys = VKEYS.filter(k=>d[k]);
+  if(!keys.length) return '<span class="dval" style="background:#2a2018;color:var(--ink-mute)">填充</span>';
+  return keys.map(k=>`<span class="dval" style="background:${VCOLOR[k]}22;color:${VCOLOR[k]}">${VLABEL[k]}${d[k]}</span>`).join('');
+}
+function reqHtml(r){
+  const { mats, degs, bans } = extractReq(r.rule);
+  let h = '<div class="req"><span class="lab">需:</span>';
+  const parts = [];
+  for(const mt of mats){
+    // 具名材料 + 同类替代列表
+    const alts = matAlts(mt.name);
+    parts.push(`<span class="mat">${esc(mt.text)}</span>${alts?`<span class="alts">${alts}</span>`:''}`);
+  }
+  for(const d of degs){
+    // 度值要求 + 满足该度值的材料列表
+    const alts = degAlts(d.k, d.num);
+    parts.push(`<span class="deg">${d.label}${d.op}${d.num}${alts?` <span class="alts">(${alts})</span>`:''}</span>`);
+  }
+  h += parts.join(' ') || '<span class="deg">任意</span>';
+  if(bans.length) h += ` <span class="deg" style="color:var(--hp)">禁 ${bans.join('、')}</span>`;
+  h += '</div>';
+  return h;
+}
+/* 同类替代:返回满足该材料度值的其他材料(排除自身) */
+function matAlts(name){
+  const d = materials[name]||{};
+  const keys = VKEYS.filter(k=>d[k]);
+  if(!keys.length) return '';
+  const alts = Object.keys(materials).filter(m=>{
+    if(m===name) return false;
+    const dm = materials[m];
+    return keys.some(k=>dm[k] && Math.abs(dm[k]-d[k])<0.01);
+  });
+  return alts.length ? alts.slice(0,6).join('、') : '';
+}
+/* 度值替代:返回满足该度值要求的材料(取度值≥num 的前6个) */
+function degAlts(key, num){
+  const alts = Object.keys(materials).filter(m=>{
+    const d = materials[m];
+    return d[key] && d[key]>=num;
+  });
+  return alts.length ? alts.slice(0,6).join('、') : '';
+}
+/* 自动生成配方示例:基于 rule 解析,给出具体材料组合 */
+/* 配方示例:材料名带小图,返回 HTML */
+function matChipHtml(name, num){
+  const en = MAT_EN[name];
+  const url = en ? localImg(en) : '';
+  const img = url ? `<img src="${url}" alt="" loading="lazy" onerror="this.remove()">` : `<span class="mc-emoji">${CAT_EMOJI['肉食']}</span>`;
+  return `<span class="mchip">${img}<i>${esc(name)}${num>1?'×'+num:''}</i></span>`;
+}
+/* 度值芯片:"需1点肉" + 可选材料带图,格式更易懂 */
+function degChipHtml(d){
+  const alts = degAlts(d.k, d.num);
+  const altList = alts ? alts.split('、').slice(0,3) : [];
+  if(!altList.length) return `<span class="mchip deg-label"><i>需${d.num}点${d.label}</i></span>`;
+  const chips = altList.map(n=>{
+    const en = MAT_EN[n];
+    const url = en ? localImg(en) : '';
+    const img = url ? `<img src="${url}" alt="" loading="lazy" onerror="this.remove()">` : `<span class="mc-emoji">${CAT_EMOJI['肉食']}</span>`;
+    return `<span class="mchip mchip-alt">${img}<i>${esc(n)}</i></span>`;
+  }).join('<span class="slash">/</span>');
+  return `<span class="mchip deg-label"><i>需${d.num}点${d.label}</i></span>` + chips;
+}
+function recipeExampleHtml(r){
+  const { mats, degs } = extractReq(r.rule);
+  const parts = [];
+  for(const mt of mats){
+    const num = parseInt((mt.text.match(/(\d+)/)||[])[1]||'1');
+    parts.push(matChipHtml(mt.name, num));
+  }
+  for(const d of degs){
+    parts.push(degChipHtml(d));
+  }
+  const filledMats = mats.reduce((s,m)=>s + (parseInt((m.text.match(/(\d+)/)||[])[1]||'1')),0);
+  const filledDegs = degs.reduce((s,d)=>s + d.num,0);
+  const remain = Math.max(0, 4 - filledMats - filledDegs);
+  if(remain>0) parts.push(`<span class="mchip fill-chip"><i>剩余${remain}格任选</i></span>`);
+  return parts.join('<span class="plus">+</span>');
+}
+/* 食谱卡片(移植第一版信息密度:5星+陷阱+点评+材料替代) */
+function starsHtml(n){
+  let h='';
+  for(let i=1;i<=5;i++) h+=`<span class="pt ${i<=n?'on':''}">●</span>`;
+  return h;
+}
+/* 自动生成简短特色标签 */
+function featTags(r){
+  const t=[];
+  if(r.hunger>=100) t.push('饱食拉满');
+  else if(r.hunger>=60) t.push('高饱食');
+  if(r.hp>=40) t.push('回血王');
+  else if(r.hp>=20) t.push('回血好');
+  if(r.sanity>=30) t.push('回san王');
+  if(r.spoil>=15) t.push('耐储存');
+  else if(r.spoil<=3) t.push('保质短');
+  if(r.hp<0||r.sanity<0) t.push('有负面');
+  if(r.cost>=4) t.push('材料费');
+  if(r.cook>=40) t.push('烹饪久');
+  // 稀缺度判定
+  const req = extractReq(r.rule);
+  let maxScar=0;
+  for(const m in req.mats){ if(MAT_SCAR[m]) maxScar=Math.max(maxScar,MAT_SCAR[m]); }
+  if(maxScar>=5) t.push('材料稀贵');
+  else if(maxScar===0 && r.cost<=2) t.push('材料易得');
+  return t;
+}
+function recipeCard(r){
+  const score = recipeScore(r);
+  const rec = r.stars||3;
+  const recLabels={5:'极力推荐',4:'推荐',3:'一般',2:'不推荐',1:'别做'};
+  return `<div class="card" data-id="${esc(r.id)}">
+    <div class="head">
+      <div class="emoji"><span class="fb">${CAT_EMOJI[r.cat]||'🍴'}</span>${foodImgTag(r)}</div>
+      <div class="info">
+        <div class="name">${esc(r.name)} <span class="en2">${esc(r.en||'')}</span></div>
+        <div class="stars">${starsHtml(rec)} <span class="rec-badge r${rec}">${recLabels[rec]}</span></div>
+        <div class="stats">
+          <span class="stat" style="color:var(--hp)">+${r.hp}<i>生命</i></span>
+          <span class="stat" style="color:var(--hunger)">+${r.hunger}<i>饱食</i></span>
+          <span class="stat" style="color:var(--sanity)">+${r.sanity}<i>精神</i></span>
+        </div>
+      </div>
+      <div class="score"><span class="slab">性价比</span><b>${score.toFixed(1)}</b></div>
+    </div>
+    <div class="info-block">
+      <div class="formula">${recipeExampleHtml(r)}</div>
+      ${r.caution?`<div class="caution">${esc(r.caution)}</div>`:''}
+    </div>
+  </div>`;
+}
+const MAT_EN = {'怪物肉':'Monster_Meat','大肉':'Meat','小肉':'Morsel','鸡腿':'Drumstick','蛙腿':'Frog_Legs','鱼':'Fish','鳗鱼':'Eel','龙虾':'Wobster','帽贝':'Limpet','贻贝':'Mussel','水母':'Jellyfish','鲨鱼鳍':'Shark_Fin','鱼子':'Roe','紫石斑鱼':'Purple_Grouper','霓虹鱼':'Neon_Quagga','小丑鱼':'Pierrot_Fish','叶肉':'Leafy_Meat','蝙蝠翅膀':'Batilisk_Wing','鼹鼠':'Mole','胡萝卜':'Carrot','红蘑菇':'Red_Cap','蓝蘑菇':'Blue_Cap','绿蘑菇':'Green_Cap','南瓜':'Pumpkin','茄子':'Eggplant','玉米':'Corn','仙人掌肉':'Cactus_Flesh','海带':'Kelp_Files','芦笋':'Asparagus','荨麻':'Nettle','蕨类':'Foliage','萝卜':'Carrot','苔藓':'Moss','红薯':'Sweet_Potato','曼德拉草':'Mandrake','仙人掌花':'Cactus_Flower','火龙果':'Dragonfruit','石榴':'Pomegranate','香蕉':'Banana','榴莲':'Durian','西瓜':'Watermelon','浆果':'Berries','椰子':'Coconut','咖啡豆':'Coffee_Beans','烤咖啡豆':'Coffee_Beans','鸡蛋':'Egg','高脚鸟蛋':'Tallbird_Egg','蜂蜜':'Honey','黄油':'Butter','蛇骨':'Snake_Bones','蝴蝶翅膀':'Butterfly_Wings','树枝':'Twigs','冰':'Ice','甲虫壳':'Weevole_Carapace','豆虫':'Gummy_Slug','桦树果':'Birchnut','糖蛞蝓':'Gummy_Slug','橙色皮克鼠':'Popperfish'};
+/* 生食材卡片:展示生吃/烤熟两种状态 */
+function rawFoodCard(rf){
+  const enKey = rf.en||'';
+  const url = IMG_URLS[enKey] ? localImg(enKey) : '';
+  const img = url ? `<img src="${url}" alt="${esc(rf.name)}" loading="lazy" onerror="this.remove()">` : '';
+  const r = rf.raw, c = rf.ck;
+  const fmt = v => v>0?`+${v}`:(v<0?`${v}`:'0');
+  return `<div class="card raw-card" data-id="raw_${esc(rf.en)}">
+    <div class="head">
+      <div class="emoji"><span class="fb">${rf.cat==='肉食'?'🍖':rf.cat==='甜点'?'🍰':'🥬'}</span>${img}</div>
+      <div class="info">
+        <div class="name">${esc(rf.name)} <span class="en2">${esc(rf.en||'')}</span></div>
+        <div class="tags" style="margin-top:3px"><span class="tag cat">生食材</span></div>
+      </div>
+    </div>
+    <div class="raw-grid">
+      <div class="raw-state">
+        <div class="rs-title">🥩 生吃</div>
+        <div class="rs-stats">
+          <span style="color:var(--hp)">${fmt(r.p)}<i>血</i></span>
+          <span style="color:var(--hunger)">${fmt(r.h)}<i>饱</i></span>
+          <span style="color:var(--sanity)">${fmt(r.s)}<i>san</i></span>
+        </div>
+      </div>
+      <div class="raw-state">
+        <div class="rs-title">🔥 烤熟</div>
+        <div class="rs-stats">
+          <span style="color:var(--hp)">${fmt(c.p)}<i>血</i></span>
+          <span style="color:var(--hunger)">${fmt(c.h)}<i>饱</i></span>
+          <span style="color:var(--sanity)">${fmt(c.s)}<i>san</i></span>
+        </div>
+      </div>
+    </div>
+    ${rf.caution?`<div class="caution"><b>注意事项：</b>${esc(rf.caution)}</div>`:''}
+  </div>`;
+}
+/* 图片:本地 images/ 目录,113 张饥荒 wiki 真实图离线可用 */
+const IMG_URLS = JSON.parse(document.getElementById('img-urls').textContent);
+function localImg(key){ return key ? `images/${encodeURIComponent(key)}.png` : ''; }
+function foodImgTag(r){
+  const key = r.en ? r.en.replace(/\s+/g,'_') : '';
+  const url = IMG_URLS[key] ? localImg(key) : '';
+  return url ? `<img src="${url}" alt="${esc(r.name)}" loading="lazy" onerror="this.remove()">` : '';
+}
+function matImgTag(name){
+  const en = MAT_EN[name];
+  const url = en ? (IMG_URLS[en] ? localImg(en) : '') : '';
+  return url ? `<img src="${url}" alt="${esc(name)}" loading="lazy" onerror="this.remove()">` : '';
+}
+/* 材料选择器(统一回调机制:closePicker 收集多选结果,单选点击立即回调) */
+let _pickerOnClose=null, _pickerSel=new Set(), _pickerMulti=false;
+function openPicker(title, selected, multi, onClose){
+  $('#pickerTitle').textContent=title;
+  _pickerSel=new Set(selected||[]);
+  _pickerMulti=multi;
+  _pickerOnClose=onClose||null;
+  const body=$('#pickerBody');
+  body.innerHTML = Object.keys(MAT_GROUPS).map(g=>{
+    return `<div class="matgroup"><h4>${g}</h4><div class="matgrid">${MAT_GROUPS[g].map(n=>{
+      const c=_pickerSel.has(n);
+  return `<div class="mat ${c?'sel':''}" data-m="${esc(n)}"><div class="mimg"><span class="mfb">${esc(n.slice(0,1))}</span>${matImgTag(n)}</div><div class="mn">${esc(n)}</div><div class="mv">${degHtml(n)}</div>${c?'<span class="cnt">✓</span>':''}</div>`;
+    }).join('')}</div></div>`;
+  }).join('');
+  body.onclick=e=>{
+    const t=e.target.closest('.mat');if(!t)return;
+    const m=t.dataset.m;
+    if(_pickerMulti){
+      if(_pickerSel.has(m)) _pickerSel.delete(m); else _pickerSel.add(m);
+      t.classList.toggle('sel');
+      let c=t.querySelector('.cnt'); if(c)c.remove();
+      if(_pickerSel.has(m)){const s=document.createElement('span');s.className='cnt';s.textContent='✓';t.appendChild(s);}
+    } else {
+      const cb=_pickerOnClose;
+      closePicker();
+      if(cb)cb([m]);
+    }
+  };
+  $('#pickerModal').classList.add('open');
+}
+function closePicker(){
+  if(!$('#pickerModal').classList.contains('open'))return;
+  const cb=_pickerOnClose;
+  if(_pickerMulti && cb) cb([..._pickerSel]);
+  $('#pickerModal').classList.remove('open');
+  _pickerOnClose=null;
+}
+const MAT_GROUPS = {
+  '肉/鱼':['怪物肉','大肉','小肉','鸡腿','蛙腿','鱼','鳗鱼','龙虾','帽贝','贻贝','水母','鲨鱼鳍','鱼子','紫石斑鱼','霓虹鱼','小丑鱼','叶肉','蝙蝠翅膀','鼹鼠'],
+  '蔬菜':['胡萝卜','红蘑菇','蓝蘑菇','绿蘑菇','南瓜','茄子','玉米','仙人掌肉','海带','芦笋','荨麻','蕨类','萝卜','苔藓','红薯','曼德拉草','仙人掌花'],
+  '水果':['火龙果','石榴','香蕉','榴莲','西瓜','浆果','椰子','咖啡豆','烤咖啡豆'],
+  '蛋/乳/甜':['鸡蛋','高脚鸟蛋','蜂蜜','黄油'],
+  '其他':['蛇骨','蝴蝶翅膀','树枝','冰','甲虫壳','豆虫','桦树果','糖蛞蝓','橙色皮克鼠']
+};
+
+/* 烹饪锅(融合反查):点材料放入下一空格,点槽位移除,实时显示可匹配食谱 */
+let potSlots=[null,null,null,null];
+let potGroup='全部';
+const POT_GROUPS=['全部',...Object.keys(MAT_GROUPS)];
+function potMats(){
+  if(potGroup==='全部') return Object.keys(materials);
+  return MAT_GROUPS[potGroup];
+}
+function renderPotGroupChips(){
+  $('#potGroupChips').innerHTML=POT_GROUPS.map(g=>`<span class="chip filter ${g===potGroup?'on':''}" data-g="${esc(g)}">${g}</span>`).join('');
+}
+function renderPotMatGrid(){
+  const sel=new Set(potSlots.filter(x=>x));
+  $('#potMatGrid').innerHTML=potMats().map(n=>{
+    const cnt=potSlots.filter(x=>x===n).length;
+    return `<div class="mat ${cnt?'sel':''}" data-m="${esc(n)}"><div class="mimg"><span class="mfb">${esc(n.slice(0,1))}</span>${matImgTag(n)}</div><div class="mn">${esc(n)}</div><div class="mv">${degHtml(n)}</div>${cnt?`<span class="cnt">${cnt}</span>`:''}</div>`;
+  }).join('');
+}
+function renderSlots(){
+  $('#potCount').textContent=`${potSlots.filter(x=>x).length}/4`;
+  $('#slots').innerHTML=potSlots.map((m,i)=>{
+    if(m){
+      return `<div class="slot filled" data-i="${i}">${matImgTag(m)}<span class="sl">${esc(m)}</span></div>`;
+    }
+    return `<div class="slot" data-i="${i}"><span class="ph">＋</span></div>`;
+  }).join('');
+}
+/* 可匹配食谱:满4格=判定结果;不满4格=含已选材料的食谱(反查) */
+function matchableRecipes(){
+  const sel=potSlots.filter(x=>x);
+  if(sel.length===0) return [];
+  if(sel.length===4){
+    // 满4格:返回所有命中的食谱(不只判定一种),按优先级排序
+    const t=buildT(potSlots);
+    const out=[];
+    for(const r of SORTED){
+      const fn=getRuleFn(r.rule);
+      try{ if(fn(t)) out.push({r, hit:[], primary: out.length===0}); }catch(e){}
+    }
+    return out;
+  }
+  // 1-3格:动态模拟填充,找出所有可制食物
+  // 优化:1-2格穷举所有填充;3格只试每个材料作为第4格(55次)
+  const selCounts={};
+  for(const m of sel) selCounts[m]=(selCounts[m]||0)+1;
+  const remain=4-sel.length;
+  const out=[];
+  const seen=new Set();
+  const candMats=Object.keys(materials);
+  function tryJudge(cur){
+    const t=buildT(cur);
+    for(const r of SORTED){
+      const fn=getRuleFn(r.rule);
+      try{
+        if(fn(t) && r.id!=='wetgoop'){
+          if(!seen.has(r.id)){
+            seen.add(r.id);
+            out.push({r, hit:[...sel], primary:false});
+          }
+        }
+      }catch(e){}
+    }
+  }
+  if(remain===1){
+    // 3格:试每个材料作为第4格
+    for(const m of candMats){ tryJudge([...sel, m]); }
+  } else {
+    // 1-2格:穷举所有填充组合(55^1=55 或 55^2=3025,可接受)
+    function fillRec(cur){
+      if(cur.length===4){ tryJudge(cur); return; }
+      for(const m of candMats){ cur.push(m); fillRec(cur); cur.pop(); }
+    }
+    fillRec([...sel]);
+  }
+  out.sort((a,b)=>b.r.priority-a.r.priority);
+  return out;
+}
+let potResultExpanded=false; // 不满4格时结果是否展开全部
+function renderPotStatus(){
+  const filled=potSlots.filter(x=>x);
+  const t=buildT(potSlots);
+  const degs=VKEYS.filter(k=>t.v[k]).map(k=>`${VLABEL[k]}=${t.v[k]}`).join('，')||'无';
+  let html=`<div class="hint">度值：${degs}</div>`;
+  if(filled.length===0){
+    html+=`<div class="empty">点下方材料放入锅</div>`;
+  } else if(filled.length<4){
+    const ms=matchableRecipes();
+    html+=`<div class="section-title" style="font-size:13px;margin:6px 0">搭配其他材料可制 ${ms.length} 道菜</div>`;
+    if(ms.length){
+      // 默认只展开TOP3,其余折叠
+      const top=ms.slice(0,3);
+      const rest=ms.slice(3);
+      html+= top.map(({r})=>recipeCard(r)).join('');
+      if(rest.length){
+        if(potResultExpanded){
+          html+= rest.map(({r})=>recipeCard(r)).join('');
+          html+=`<button class="expand-btn" id="collapseBtn">收起</button>`;
+        } else {
+          html+=`<button class="expand-btn" id="expandBtn">展开全部 ${ms.length} 道菜 ▼</button>`;
+        }
+      }
+    } else {
+      html+='<div class="empty">暂无可搭配的食谱</div>';
+    }
+  } else {
+    // 满4格:展示所有命中的食谱,第一个是判定结果(优先级最高)
+    const ms=matchableRecipes();
+    if(ms.length===0 || (ms.length===1 && ms[0].r.id==='wetgoop')){
+      html+=`<div class="section-title" style="font-size:13px;margin:6px 0">判定结果</div>`;
+      html+=recipeCard(recipeById('wetgoop'));
+    } else {
+      html+=`<div class="section-title" style="font-size:13px;margin:6px 0">✅ 判定结果（${ms.length} 道可制，第1道为实际产出）</div>`;
+      html+= ms.map(({r,primary})=> (primary?'<div class="primary-mark">🏆 实际产出（优先级最高）</div>':'')+recipeCard(r)).join('');
+    }
+  }
+  $('#potResult').innerHTML=html;
+  // 绑定卡片展开
+  $$('#potResult .card').forEach(c=>c.onclick=()=>c.classList.toggle('open'));
+  // 绑定展开/收起按钮
+  const eb=$('#expandBtn'); if(eb) eb.onclick=()=>{potResultExpanded=true;renderPotStatus();};
+  const cb=$('#collapseBtn'); if(cb) cb.onclick=()=>{potResultExpanded=false;renderPotStatus();$('#potResult').scrollTop=0;};
+}
+function potRefresh(){ renderSlots(); renderPotMatGrid(); renderPotStatus(); }
+function initPot(){
+  renderPotGroupChips(); potRefresh();
+  $('#potGroupChips').onclick=e=>{const t=e.target.closest('.chip');if(!t)return;potGroup=t.dataset.g;renderPotGroupChips();renderPotMatGrid();};
+  $('#potMatGrid').onclick=e=>{
+    const t=e.target.closest('.mat');if(!t)return;
+    const m=t.dataset.m;
+    const empty=potSlots.findIndex(x=>x===null);
+    if(empty===-1){ // 满4格,提示
+      const old=$('#potCount').style.color; $('#potCount').style.color='var(--hp)';
+      setTimeout(()=>{$('#potCount').style.color='';},600);
+      return;
+    }
+    potSlots[empty]=m; potResultExpanded=false; potRefresh();
+  };
+  $('#slots').onclick=e=>{
+    const t=e.target.closest('.slot');if(!t)return;
+    const i=+t.dataset.i;
+    if(potSlots[i]){ potSlots[i]=null; potResultExpanded=false; potRefresh(); }
+  };
+  $('#clearPot').onclick=()=>{potSlots=[null,null,null,null];potResultExpanded=false;potRefresh();};
+}
+
+/* 自测 */
+function runTests(){
+  let pass=0; const rows=[];
+  for(const c of TESTS.cases){
+    const got=judgePot(c.materials); const ok=got===c.expected;
+    if(ok)pass++;
+    rows.push(`<div class="test-row"><span class="dot ${ok?'ok':'no'}"></span><span style="flex:1"><b>${esc(c.label)}</b> <span style="color:var(--ink-mute)">→ ${esc(c.expected_name)}</span></span>${ok?'':`<span style="color:var(--hp)">实得${esc(recipeById(got)?.name||got)}</span>`}</div>`);
+  }
+  $('#testOut').innerHTML=`<div class="test-sum">通过 ${pass}/${TESTS.total} ${pass===TESTS.total?'✅':''}</div>`+rows.join('');
+}
+
+/* 图鉴:三组筛选 + 效果分类 TOP 推荐 */
+let sortKey='rec', catSel='全部', dlcSel='全部', effSel='全部';
+const CATS=['全部','肉食','素食','甜点','特殊','生食材'];
+const EFFS=[
+  {k:'全部',label:'全部'},
+  {k:'饱食',label:'🍞 饱食'},
+  {k:'生命',label:'❤️ 生命'},
+  {k:'精神',label:'🧠 精神'},
+];
+const DLCS=[
+  {k:'全部',label:'全部',match:()=>true},
+  {k:'通用',label:'通用(本体+巨人国)',match:r=>r.dlc==='原版'||r.dlc==='巨人国'},
+  {k:'海难',label:'海难',match:r=>r.dlc==='海难'},
+  {k:'哈姆雷特',label:'哈姆雷特',match:r=>r.dlc==='哈姆雷特'},
+];
+function renderChips(elId, arr, sel, attr){
+  $('#'+elId).innerHTML=arr.map(a=>{
+    const v = a.k!==undefined?a.k:a;
+    const lbl = a.label!==undefined?a.label:a;
+    const on = (v===sel)?'on':'';
+    return `<span class="chip ${on}" data-v="${esc(v)}" ${attr?`${attr}="${esc(v)}"`:''}>${esc(lbl)}</span>`;
+  }).join('');
+}
+/* 稀缺权重:值越小=越容易获取,用于"材料好获取"的推荐排序惩罚 */
+function easePenalty(r){
+  const req = extractReq(r);
+  let sca = 0;
+  for(const m in req.mats){ if(MAT_SCAR[m]) sca = Math.max(sca, MAT_SCAR[m]); }
+  return sca; // 0-6
+}
+/* 效果分类 TOP:每个效果下,取 对应维度高回复 + 稀缺度低(材料易获取) + 性价比 排序,取前 4 */
+function topBy(effDim, baseList, n=4){
+  const kMap = {'饱食':'hunger','生命':'hp','精神':'sanity'};
+  const key = kMap[effDim];
+  if(!key) return [];
+  const byVal = Math.max(40, ...baseList.map(r=>r[key]))*0.35;
+  return baseList
+    .filter(r=>r[key]>=byVal && r[key]>0)
+    .map(r=>{
+      const pen = easePenalty(r);
+      const s = recipeScore(r) - pen*5 - r.cost*3;
+      return {r,s};
+    })
+    .sort((a,b)=>b.s-a.s)
+    .slice(0,n)
+    .map(x=>x.r);
+}
+function renderTOP(baseList){
+  // TOP5:按当前效果维度排序(无效果维度时用综合性价比)
+  const kMap = {'饱食':'hunger','生命':'hp','精神':'sanity'};
+  const dimKey = kMap[effSel];
+  let list, title, reason;
+  if(dimKey){
+    // 按该维度回复量排序,排除该维度无回复的菜
+    list = baseList
+      .filter(r=>r[dimKey]>0 && r.hp>=0 && r.sanity>=0 && r.id!=='wetgoop' && r.id!=='powdercake')
+      .map(r=>({r, s: r[dimKey] - easePenalty(r)*3 - r.cost*2}))
+      .sort((a,b)=>b.s-a.s)
+      .slice(0,5).map(x=>x.r);
+    const dimLabel = effSel;
+    title = `🏆 ${dimLabel}推荐 TOP5`;
+    reason = `· ${dimLabel}回复高 + 材料易得`;
+  } else {
+    list = baseList
+      .filter(r=>r.hp>=0 && r.sanity>=0 && r.id!=='wetgoop' && r.id!=='powdercake')
+      .map(r=>({r, s: recipeScore(r) - easePenalty(r)*5 - r.cost*3}))
+      .sort((a,b)=>b.s-a.s)
+      .slice(0,5).map(x=>x.r);
+    title = `💎 性价比 TOP5`;
+    reason = `· 回复高 + 材料易得 + 便宜`;
+  }
+  if(!list.length){ $('#topWrap').innerHTML=''; return; }
+  const html = `
+    <div class="top-block">
+      <div class="top-title">${title} <span class="top-reason">${reason}</span></div>
+      <div class="top-scroll">
+        ${list.map(r=>{
+          const scaStars = easePenalty(r);
+          const scaIcon = '🟢🟢🟡🟠🔴🔴🔴'.slice(0,scaStars*2);
+          const meta = dimKey ? `+${r[dimKey]}` : `★${recipeScore(r).toFixed(1)}`;
+          return `<div class="topcard" data-id="${esc(r.id)}">
+            <div class="tpi"><span class="fb">${CAT_EMOJI[r.cat]||'🍴'}</span>${foodImgTag(r)}</div>
+            <div class="tname">${esc(r.name)}</div>
+            <div class="tmeta">${meta} · <span title="稀缺度">${scaIcon||'🟢'}</span></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  $('#topWrap').innerHTML = html;
+  $$('.topcard').forEach(c=>c.onclick=()=>{
+    const card = $(`.card[data-id="${c.dataset.id}"]`);
+    if(card){ card.classList.add('hl'); setTimeout(()=>card.classList.remove('hl'),1500); card.scrollIntoView({behavior:'smooth',block:'center'}); }
+  });
+}
+function filteredList(){
+  // 生食材分类:返回 rawFoods 包装为类 recipe 对象
+  if(catSel==='生食材'){
+    return (DATA.rawFoods||[]).map(rf=>({
+      id:'raw_'+rf.en, name:rf.name, en:rf.en, cat:'生食材',
+      dlc:'通用', hunger:Math.max(rf.raw.h,rf.ck.h), hp:Math.max(rf.raw.p,rf.ck.p), sanity:Math.max(rf.raw.s,rf.ck.s),
+      spoil:0, cook:0, cost:0, priority:0, stars:3, _raw:rf
+    }));
+  }
+  return SORTED.filter(r=>{
+    if(catSel!=='全部' && r.cat!==catSel) return false;
+    const d = DLCS.find(x=>x.k===dlcSel); if(d && !d.match(r)) return false;
+    if(effSel!=='全部'){
+      const kMap = {'饱食':'hunger','生命':'hp','精神':'sanity'};
+      const key = kMap[effSel]; if(!r[key] || r[key]<=0) return false;
+    }
+    return true;
+  });
+}
+function renderList(){
+  let list=filteredList();
+  list=list.slice().sort((a,b)=>{
+    switch(sortKey){
+      case 'rec':return (b.stars||3)-(a.stars||3) || recipeScore(b)-recipeScore(a);
+      case 'hunger':return b.hunger-a.hunger;
+      case 'hp':return b.hp-a.hp;
+      case 'sanity':return b.sanity-a.sanity;
+      case 'score':return recipeScore(b)-recipeScore(a);
+      case 'spoil':return b.spoil-a.spoil;
+      default:return b.priority-a.priority;
+    }
+  });
+  const base = filteredList();
+  if(catSel!=='生食材') renderTOP(base); else $('#topWrap').innerHTML='';
+  const titles = [];
+  if(dlcSel!=='全部') titles.push(dlcSel);
+  if(effSel!=='全部') titles.push(effSel);
+  if(catSel!=='全部') titles.push(catSel);
+  $('#listTitle').textContent = (titles.length? titles.join(' · '):'所有菜谱') + `（共 ${list.length} 道）`;
+  $('#list').innerHTML = list.length ? list.map(r=> r._raw ? rawFoodCard(r._raw) : recipeCard(r)).join('') : '<div class="empty">当前筛选无匹配菜谱</div>';
+  $$('.card').forEach(c=>c.onclick=()=>c.classList.toggle('open'));
+}
+function initCodex(){
+  renderChips('dlcChips',DLCS,dlcSel,'data-dlc');
+  renderChips('effectChips',EFFS,effSel,'data-eff');
+  renderChips('catChips',CATS,catSel,'data-cat');
+  renderList();
+  $('#catChips').onclick=e=>{const t=e.target.closest('.chip');if(!t)return;catSel=t.dataset.v;renderChips('catChips',CATS,catSel,'data-cat');renderList();};
+  $('#effectChips').onclick=e=>{const t=e.target.closest('.chip');if(!t)return;effSel=t.dataset.v;renderChips('effectChips',EFFS,effSel,'data-eff');renderList();};
+  $('#dlcChips').onclick=e=>{const t=e.target.closest('.chip');if(!t)return;dlcSel=t.dataset.v;renderChips('dlcChips',DLCS,dlcSel,'data-dlc');renderList();};
+  $('#runTests').onclick=runTests;
+}
+
+/* 导航 */
+function initNav(){
+  $$('.tab').forEach(t=>t.onclick=()=>{
+    $$('.tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+    $$('.view').forEach(v=>v.classList.remove('active'));
+    $('#view-'+t.dataset.v).classList.add('active');
+  });
+  $('#testBtn').onclick=()=>{
+    $$('.tab').forEach(x=>x.classList.remove('on'));
+    $$('.view').forEach(v=>v.classList.remove('active'));
+    $('#view-test').classList.add('active');
+    runTests();
+  };
+  $('#pickerClose').onclick=closePicker;
+  $('#pickerModal').onclick=e=>{if(e.target===$('#pickerModal'))closePicker();};
+}
+
+/* PWA 安装 */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').hidden=false;});
+$('#installBtn').onclick=async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null; $('#installBtn').hidden=true;
+};
+window.addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;});
+
+/* Service Worker */
+if('serviceWorker' in navigator){
+  const swCode=`
+    const C='ds-v2';
+    self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./index.html'])).catch(()=>{}));});
+    self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
+    self.addEventListener('fetch',e=>{
+      const req=e.request; if(req.method!=='GET')return;
+      e.respondWith(caches.match(req).then(r=>r||fetch(req).then(res=>{const cp=res.clone();caches.open(C).then(c=>c.put(req,cp)).catch(()=>{});return res;}).catch(()=>caches.match('./'))));
+    };`;
+  try{const url=URL.createObjectURL(new Blob([swCode],{type:'text/javascript'}));navigator.serviceWorker.register(url,{scope:'./'}).catch(()=>{});}catch(e){}
+}
+
+initCodex(); initPot(); initNav();
+</script>
+</body>
+</html>
